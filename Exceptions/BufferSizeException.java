@@ -1,6 +1,6 @@
 package Exceptions;
 
-public class BufferNegativeSizeException extends Exception {
+public class BufferSizeException extends Exception {
 
     /**
      *

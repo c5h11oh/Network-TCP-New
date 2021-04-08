@@ -1,3 +1,5 @@
+package Buffer;
+
 import Exceptions.*;
 
 public class SenderBuffer extends Buffer {
@@ -9,10 +11,10 @@ public class SenderBuffer extends Buffer {
     /* Indicators of thread `SendFile` finishing putting data into buffer */
     private boolean sendFileFinish = false;     // If set, `SendFile` has put all data into buffer.
     
-    public SenderBuffer(int bufferSize, int windowSize) throws BufferNegativeSizeException {
+    public SenderBuffer(int bufferSize, int windowSize) throws BufferSizeException {
         super(bufferSize, windowSize);
-        lastByteACK = lastByteSent = -1;
-        lastByteWritten = -1;
+        lastByteACK = lastByteSent = bufferSize - 1;
+        lastByteWritten = bufferSize - 1;
     }
 
     public int getLastByteACK(){
@@ -103,6 +105,7 @@ public class SenderBuffer extends Buffer {
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
+    // TODO: May be wrong. Did not consider wrapping
     private void AssertValidPointers() throws InvalidPointerException{
         if (lastByteACK > lastByteSent || lastByteSent > lastByteWritten){
             throw new InvalidPointerException();
