@@ -12,7 +12,9 @@ public class ReceiverBuffer extends Buffer {
     private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
     
     public ReceiverBuffer(int bufferSize, int windowSize) throws BufferSizeException {
-        super(bufferSize, windowSize);
+        super(++bufferSize, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
+        // The `lastByteRead` byte cannot be written even if `lastByteRead == nextByteExpected`. 
+        // If `lastByteRead == nextByteExpected`, the free space is 0 and getData() must be called.
         lastByteRead = bufferSize - 1;
         nextByteExpected = 0;
     }
@@ -33,12 +35,15 @@ public class ReceiverBuffer extends Buffer {
         return allDataReceived;
     }
 
-    public int checkFreeSpace(){
-        if(nextByteExpected > lastByteRead) { // not wrapped
-            return bufferSize - (nextByteExpected - 1 - lastByteRead);
+    public int checkFreeSpace(){ // `lastByteRead` is NOT free
+        if (nextByteExpected == lastByteRead){
+            return 0;
         }
-        else{   // wrapped
-            return (bufferSize - lastByteRead) + nextByteExpected - 1;
+        else if (nextByteExpected > lastByteRead) { // not wrapped
+            return bufferSize - (nextByteExpected - lastByteRead);
+        }
+        else {   // wrapped
+            return (lastByteRead - nextByteExpected);
         }
     }
 
@@ -46,33 +51,25 @@ public class ReceiverBuffer extends Buffer {
      * stored in and managed by PacketManager as packets. Therefore, ReceiverBuffer does not 
      * need to maintain lastByteRcvd.
      */
-    public void put(byte[] data) throws BufferInsufficientSpaceException, InvalidPointerException {
+    public void put(byte[] data) throws BufferInsufficientSpaceException{
+        if (checkFreeSpace() < data.length) throw new BufferInsufficientSpaceException();
+        
         int endByteCount = bufferSize - nextByteExpected;
         boolean wrapped = data.length > endByteCount;
-        if(!wrapped){ // not wrapped
-            if ((lastByteRead >= nextByteExpected) && (lastByteRead - nextByteExpected + 1 < data.length)){
-                throw new BufferInsufficientSpaceException();
-            }
+        
+        if (!wrapped){ // not wrapped
             System.arraycopy(data, 0, this.buf, nextByteExpected, data.length);
             nextByteExpected += data.length;
         }
         else{ // wrapped
-            if (
-                ( (lastByteRead < nextByteExpected) && (lastByteRead + 1 + endByteCount < data.length) ) ||
-                ( (lastByteRead >= nextByteExpected) )
-            ){
-                throw new BufferInsufficientSpaceException();
-            }
             System.arraycopy(data, 0, this.buf, nextByteExpected, endByteCount);
             System.arraycopy(data, endByteCount, this.buf, 0, data.length - endByteCount);
             nextByteExpected = data.length - endByteCount;
         }
-
-        AssertValidPointers();
     }
 
     public void put(byte[] data, boolean finish) 
-                 throws BufferInsufficientSpaceException, InvalidPointerException {
+                 throws BufferInsufficientSpaceException{
         put(data);
         if(finish){
             this.allDataReceived = true;
@@ -111,14 +108,13 @@ public class ReceiverBuffer extends Buffer {
             lastByteRead = dataLength - endByteCount - 1;
         }
         assert lastByteRead == lastContiguousByte;
-        AssertValidPointers();
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    // TODO: May be wrong. Did not consider wrapping
-    private void AssertValidPointers() throws InvalidPointerException{
-        if (lastByteRead >= nextByteExpected /* || nextByteExpected > lastByteRcvd + 1 */ ) {
-            throw new InvalidPointerException();
-        }
-    }
+    // Seems I cannot check if the pointer is valid. Every position has its meaning.
+    // private void AssertValidPointers() throws InvalidPointerException{
+    //     if (lastByteRead >= nextByteExpected /* || nextByteExpected > lastByteRcvd + 1 */ ) {
+    //         throw new InvalidPointerException();
+    //     }
+    // }
 }

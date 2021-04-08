@@ -12,7 +12,9 @@ public class SenderBuffer extends Buffer {
     private boolean sendFileFinish = false;     // If set, `SendFile` has put all data into buffer.
     
     public SenderBuffer(int bufferSize, int windowSize) throws BufferSizeException {
-        super(bufferSize, windowSize);
+        super(++bufferSize, windowSize);  // We add one additional byte to avoid ambiguity when wrapping.
+        // The `lastByteACK` byte cannot be written even if `lastByteACK == nextByteExpected`, where `nextByteExpected = (lastByteWritten + 1) % bufferSize`. 
+        // If `lastByteRead == nextByteExpected`, the free space is 0 and getDataToSend() must be called.
         lastByteACK = lastByteSent = bufferSize - 1;
         lastByteWritten = bufferSize - 1;
     }
@@ -29,12 +31,20 @@ public class SenderBuffer extends Buffer {
         return this.lastByteWritten;
     }
 
-    public int checkFreeSpace(){
-        if(lastByteWritten >= lastByteACK) { // not wrapped
-            return bufferSize - (lastByteWritten - lastByteACK);
+    public boolean isSendFileFinished() {
+        return sendFileFinish;
+    }
+
+    public int checkFreeSpace(){ // `lastByteACK` is NOT free
+        int nextByteExpected = (lastByteWritten + 1) % bufferSize;
+        if (nextByteExpected == lastByteACK) {
+            return 0;
+        }
+        else if (nextByteExpected > lastByteACK) { // not wrapped
+            return bufferSize - (nextByteExpected - lastByteACK);
         }
         else{   // wrapped
-            return (bufferSize - lastByteACK) + lastByteWritten;
+            return (lastByteACK - nextByteExpected);
         }
     }
 
@@ -43,26 +53,25 @@ public class SenderBuffer extends Buffer {
             throw new BufferInsufficientSpaceException();
         }
         
+        int endByteCount = bufferSize - lastByteWritten - 1;
+        boolean wrapped = length > endByteCount;
+
         // wrap check
-        if (length < bufferSize - lastByteWritten) { // not wrapped
+        if (!wrapped) { // not wrapped
             System.arraycopy(data, 0, this.buf, lastByteWritten + 1, length);
             lastByteWritten += length;
         }
         else{ // wrapped
-            int endByteCount = bufferSize - lastByteWritten - 1;
             System.arraycopy(data, 0, this.buf, lastByteWritten + 1, endByteCount);
             System.arraycopy(data, endByteCount, this.buf, 0, length - endByteCount);   
             lastByteWritten = length - endByteCount - 1;
         }
-
-        AssertValidPointers();
     }
 
     public void put(byte[] data, int length, boolean finish) throws BufferInsufficientSpaceException, InvalidPointerException {
         put(data, length);
         if(finish){
             this.sendFileFinish = true;
-            
         }
     }
 
@@ -71,10 +80,10 @@ public class SenderBuffer extends Buffer {
      * Advance `lastByteSent` by length.
      * Note this get function DOES advance the lastByteSent pointer, which is different 
      * from the handwritten draft. The thread that resend packet should NEVER get data 
-     * by calling this function, since now retransmission only has to do with "PacketManager".
+     * by calling this function. It should retrieve data from "PacketManager".
      */
     public byte[] getDataToSend(int length) throws InvalidPointerException {
-        if (sendFileFinish && lastByteWritten == lastByteSent) { 
+        if (lastByteWritten == lastByteSent) { 
             // No more data to send
             return null;
         }
@@ -100,15 +109,26 @@ public class SenderBuffer extends Buffer {
             System.arraycopy(this.buf, 0, returnData, endByteCount, byteToBeSent - endByteCount);
             lastByteSent = byteToBeSent - endByteCount - 1;
         }
-
-        AssertValidPointers();
+        
+        AssertValidSentPointer();
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    // TODO: May be wrong. Did not consider wrapping
-    private void AssertValidPointers() throws InvalidPointerException{
-        if (lastByteACK > lastByteSent || lastByteSent > lastByteWritten){
-            throw new InvalidPointerException();
+    private void AssertValidSentPointer() throws InvalidPointerException{
+        if (lastByteACK < lastByteWritten){
+            if (lastByteSent < lastByteACK || lastByteSent > lastByteWritten) {
+                throw new InvalidPointerException();
+            }
+        }
+        else if (lastByteACK > lastByteWritten){
+            if (lastByteSent < lastByteACK && lastByteSent > lastByteWritten) {
+                throw new InvalidPointerException();
+            }
+        }
+        else {
+            if (lastByteSent != lastByteACK){
+                throw new InvalidPointerException();
+            }
         }
     }
 }
