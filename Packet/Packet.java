@@ -1,5 +1,8 @@
 package Packet;
 
+import java.nio.*;
+import java.util.Arrays;
+
 public class Packet {
     public int byteSeqNum;
     public int ACK;
@@ -8,12 +11,45 @@ public class Packet {
     private int paddedChecksum;
     private byte[] data;
 
+    public Packet(){}
+    public Packet(Packet src){
+        this.ACK = src.ACK;
+        this.byteSeqNum = src.byteSeqNum;
+        this.data = Arrays.copyOf(src.data, src.data.length);
+        this.lengthAndFlag = src.lengthAndFlag;
+        this.paddedChecksum = src.paddedChecksum;
+        this.timeStamp = src.timeStamp;
+    }
+    
     public static byte[] serialize(Packet packet){
-        return null;
+        int size = 6 * 4 + (packet.data == null ? 0 : packet.data.length);
+        byte[] resultByteArray = new byte[size];
+        ByteBuffer bb = ByteBuffer.wrap(resultByteArray);
+        bb.putInt(packet.byteSeqNum);
+        bb.putInt(packet.ACK);
+        bb.putLong(packet.timeStamp);
+        bb.putInt(packet.lengthAndFlag);
+        bb.putInt(packet.paddedChecksum);
+        if (packet.data != null){
+            bb.put(packet.data);
+        }
+        return resultByteArray;
     }
 
     public static Packet deserialize(byte[] raw){
-        return null;
+        Packet resultPacket = new Packet();
+        ByteBuffer bb = ByteBuffer.wrap(raw);
+        resultPacket.byteSeqNum = bb.getInt();
+        resultPacket.ACK = bb.getInt();
+        resultPacket.timeStamp = bb.getLong();
+        resultPacket.lengthAndFlag = bb.getInt();
+        resultPacket.paddedChecksum = bb.getInt();
+        if (bb.hasRemaining()){
+            resultPacket.data = new byte[bb.remaining()];
+            bb.get(resultPacket.data);
+            assert bb.remaining() == 0;
+        }
+        return resultPacket;
     }
 
     public static void setDataAndLength(Packet packet, byte[] data){
@@ -38,10 +74,35 @@ public class Packet {
         packet.lengthAndFlag &= (Integer.MAX_VALUE - 7);
     }
     
+    // The return value is Padded (32-bit) checksum
+    public static int calculateChecksum(Packet packet){
+        // Save the original Checksum
+        int originalChecksum = packet.paddedChecksum;
+        packet.paddedChecksum = 0;
+        int calculateChecksum = 0;
+        byte[] serialized = Packet.serialize(packet);
+        ByteBuffer bb = ByteBuffer.wrap(serialized);
+        ShortBuffer sb = bb.asShortBuffer();
+        while(sb.hasRemaining()){
+            short a = sb.get();
+            calculateChecksum += ((int)a & ((1 << 16) - 1));
+            if (calculateChecksum >= (1 << 16)) { // overflow
+                calculateChecksum++;
+                calculateChecksum &= ((1 << 16) - 1);
+            }
+        }
+        packet.paddedChecksum = originalChecksum;
+        return calculateChecksum;
+    }
+    
     /* 
      * Should only be called when byteSeqNum, ACK, timeStamp are set and 
      * setDataAndLength() and setFlag() are called.
      */
-    public static void setChecksum(Packet packet){
+    public static void calculateAndSetChecksum(Packet packet){
+        int calculateChecksum = calculateChecksum(packet);
+        packet.paddedChecksum = calculateChecksum;
     }
+
+    
 }
