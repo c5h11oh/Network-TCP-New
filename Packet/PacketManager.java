@@ -9,9 +9,12 @@ public class PacketManager {
     private final int windowsSize;
     private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
     private Statistics statistics;
+    private int localSequenceNumberCounter;
+    private int remoteSequenceNumberCounter;
 
     public PacketManager(int windowSize){
         this.windowsSize = windowSize;
+        this.remoteSequenceNumberCounter = this.localSequenceNumberCounter = 0;
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
     }

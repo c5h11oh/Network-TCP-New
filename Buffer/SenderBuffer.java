@@ -8,11 +8,11 @@ public class SenderBuffer extends Buffer {
     private int lastByteSent;
     private int lastByteWritten;
 
-    /* Indicators of thread `SendFile` finishing putting data into buffer */
-    private boolean sendFileFinish = false;     // If set, `SendFile` has put all data into buffer.
+    /* Indicators of thread `FileToBuffer` finishing putting data into buffer */
+    private boolean fileToBufferFinish = false;     // If set, `FileToBuffer` has put all data into buffer.
     
-    public SenderBuffer(int bufferSize, int windowSize) throws BufferSizeException {
-        super(++bufferSize, windowSize);  // We add one additional byte to avoid ambiguity when wrapping.
+    public SenderBuffer(int bufferSize, int mtu, int windowSize) throws BufferSizeException {
+        super(++bufferSize, mtu, windowSize);  // We add one additional byte to avoid ambiguity when wrapping.
         // The `lastByteACK` byte cannot be written even if `lastByteACK == nextByteExpected`, where `nextByteExpected = (lastByteWritten + 1) % bufferSize`. 
         // If `lastByteRead == nextByteExpected`, the free space is 0 and getDataToSend() must be called.
         lastByteACK = lastByteSent = bufferSize - 1;
@@ -31,15 +31,15 @@ public class SenderBuffer extends Buffer {
         return this.lastByteWritten;
     }
 
-    public synchronized void setSendFileFinished() {
-        sendFileFinish = true;
+    public synchronized void setFileToBufferFinished() {
+        fileToBufferFinish = true;
     }
     
-    public synchronized boolean isSendFileFinished() {
-        return sendFileFinish;
+    public synchronized boolean isFileToBufferFinished() {
+        return fileToBufferFinish;
     }
 
-    public synchronized int checkFreeSpace(){ // `lastByteACK` is NOT free
+    private synchronized int checkFreeSpace(){ // `lastByteACK` is NOT free
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
         if (nextByteExpected == lastByteACK) {
             return 0;
@@ -52,30 +52,49 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    public synchronized void put(byte[] data, int length) throws BufferInsufficientSpaceException {
-        if (checkFreeSpace() < length){
+    public synchronized int waitForFreeSpace(){
+        int fs; 
+        while((fs = this.checkFreeSpace()) == 0){
+            full = true;
+            notifyAll();
+            try{
+                wait();
+            } catch (InterruptedException e) {}
+        }
+        assert fs > 0;
+        
+        return fs;
+    }
+
+    public synchronized void put(byte[] data) throws BufferInsufficientSpaceException {
+        if (data.length == 0) return;
+        
+        if (checkFreeSpace() < data.length){
             throw new BufferInsufficientSpaceException();
         }
         
         int endByteCount = bufferSize - lastByteWritten - 1;
-        boolean wrapped = length > endByteCount;
+        boolean wrapped = data.length > endByteCount;
 
         // wrap check
         if (!wrapped) { // not wrapped
-            System.arraycopy(data, 0, this.buf, lastByteWritten + 1, length);
-            lastByteWritten += length;
+            System.arraycopy(data, 0, this.buf, lastByteWritten + 1, data.length);
+            lastByteWritten += data.length;
         }
         else{ // wrapped
             System.arraycopy(data, 0, this.buf, lastByteWritten + 1, endByteCount);
-            System.arraycopy(data, endByteCount, this.buf, 0, length - endByteCount);   
-            lastByteWritten = length - endByteCount - 1;
+            System.arraycopy(data, endByteCount, this.buf, 0, data.length - endByteCount);   
+            lastByteWritten = data.length - endByteCount - 1;
         }
+
+        empty = false;
+        this.notifyAll();
     }
 
-    public synchronized void put(byte[] data, int length, boolean finish) throws BufferInsufficientSpaceException, InvalidPointerException {
-        put(data, length);
+    public synchronized void put(byte[] data, boolean finish) throws BufferInsufficientSpaceException, InvalidPointerException {
+        put(data);
         if(finish){
-            this.sendFileFinish = true;
+            this.fileToBufferFinish = true;
         }
     }
 
@@ -87,13 +106,24 @@ public class SenderBuffer extends Buffer {
      * by calling this function. It should retrieve data from "PacketManager".
      */
     public synchronized byte[] getDataToSend(int length) throws InvalidPointerException {
-        if (lastByteWritten == lastByteSent) { 
-            // No more data to send
-            return null;
+        if (length <= 0) return null;
+        
+        while (lastByteWritten == lastByteSent) { 
+            // Buffer empty. No more data to send. 
+            empty = true;
+
+            // Does app still want to send data? Maybe it's finished?
+            if(this.fileToBufferFinish) { return null; }
+
+            // The app still has data wishes to send. Notify it 
+            notifyAll();
+            try{
+                wait();
+            } catch (InterruptedException e) {}
         }
         
         int byteToBeSent;
-        boolean wrapped = length >= bufferSize - lastByteSent;
+        boolean wrapped = (lastByteWritten > lastByteSent);
 
         if (!wrapped) { // Not wrapped
             byteToBeSent = Math.min(length, lastByteWritten - lastByteSent);
@@ -115,6 +145,9 @@ public class SenderBuffer extends Buffer {
         }
         
         AssertValidSentPointer();
+        this.full = false;
+        notifyAll();
+
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 

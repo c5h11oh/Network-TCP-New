@@ -52,6 +52,8 @@ public class ReceiverBuffer extends Buffer {
      * need to maintain lastByteRcvd.
      */
     public void put(byte[] data) throws BufferInsufficientSpaceException{
+        if (data.length == 0) return;
+        
         if (checkFreeSpace() < data.length) throw new BufferInsufficientSpaceException();
         
         int endByteCount = bufferSize - nextByteExpected;
@@ -66,6 +68,8 @@ public class ReceiverBuffer extends Buffer {
             System.arraycopy(data, endByteCount, this.buf, 0, data.length - endByteCount);
             nextByteExpected = data.length - endByteCount;
         }
+
+        this.notifyAll();
     }
 
     public void put(byte[] data, boolean finish) 
