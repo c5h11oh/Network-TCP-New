@@ -7,7 +7,7 @@ public class PacketWithInfoComparator implements Comparator<PacketWithInfo> {
         if (pk1.timeOut < pk2.timeOut){
             return -1;
         }
-        else if (pk1.timeOut < pk2.timeOut){
+        else if (pk1.timeOut == pk2.timeOut){
             return 0;
         }
         else{
