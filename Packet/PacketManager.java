@@ -6,10 +6,12 @@ import java.util.concurrent.PriorityBlockingQueue;
 import Statistics.*;
 
 public class PacketManager {
+    private final int windowsSize;
     private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
     private Statistics statistics;
 
-    PacketManager(){
+    public PacketManager(int windowSize){
+        this.windowsSize = windowSize;
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
     }

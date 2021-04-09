@@ -19,23 +19,27 @@ public class SenderBuffer extends Buffer {
         lastByteWritten = bufferSize - 1;
     }
 
-    public int getLastByteACK(){
+    public synchronized int getLastByteACK(){
         return this.lastByteACK;
     }
 
-    public int getLastByteSent(){
+    public synchronized int getLastByteSent(){
         return this.lastByteSent;
     }
 
-    public int getLastByteWritten(){
+    public synchronized int getLastByteWritten(){
         return this.lastByteWritten;
     }
 
-    public boolean isSendFileFinished() {
+    public synchronized void setSendFileFinished() {
+        sendFileFinish = true;
+    }
+    
+    public synchronized boolean isSendFileFinished() {
         return sendFileFinish;
     }
 
-    public int checkFreeSpace(){ // `lastByteACK` is NOT free
+    public synchronized int checkFreeSpace(){ // `lastByteACK` is NOT free
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
         if (nextByteExpected == lastByteACK) {
             return 0;
@@ -48,7 +52,7 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    public void put(byte[] data, int length) throws BufferInsufficientSpaceException, InvalidPointerException {
+    public synchronized void put(byte[] data, int length) throws BufferInsufficientSpaceException {
         if (checkFreeSpace() < length){
             throw new BufferInsufficientSpaceException();
         }
@@ -68,7 +72,7 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    public void put(byte[] data, int length, boolean finish) throws BufferInsufficientSpaceException, InvalidPointerException {
+    public synchronized void put(byte[] data, int length, boolean finish) throws BufferInsufficientSpaceException, InvalidPointerException {
         put(data, length);
         if(finish){
             this.sendFileFinish = true;
@@ -82,7 +86,7 @@ public class SenderBuffer extends Buffer {
      * from the handwritten draft. The thread that resend packet should NEVER get data 
      * by calling this function. It should retrieve data from "PacketManager".
      */
-    public byte[] getDataToSend(int length) throws InvalidPointerException {
+    public synchronized byte[] getDataToSend(int length) throws InvalidPointerException {
         if (lastByteWritten == lastByteSent) { 
             // No more data to send
             return null;
@@ -114,7 +118,7 @@ public class SenderBuffer extends Buffer {
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    private void AssertValidSentPointer() throws InvalidPointerException{
+    private synchronized void AssertValidSentPointer() throws InvalidPointerException{
         if (lastByteACK < lastByteWritten){
             if (lastByteSent < lastByteACK || lastByteSent > lastByteWritten) {
                 throw new InvalidPointerException();
