@@ -65,9 +65,7 @@ public class Packet {
         packet.lengthAndFlag |= (data.length << 3); // Set data
     }
 
-    public void setPaddedCheckSum(int paddedChecksum){
-        this.paddedChecksum = paddedChecksum;
-    }
+  
 
     public static void setFlag(Packet packet, boolean SYN, boolean FIN, boolean ACK){
         if (SYN) {
@@ -113,6 +111,10 @@ public class Packet {
     public static void calculateAndSetChecksum(Packet packet){
         int calculateChecksum = calculateChecksum(packet);
         packet.paddedChecksum = calculateChecksum;
+    }
+
+    public long getTimeStamp(){
+        return this.timeStamp;
     }
 
     

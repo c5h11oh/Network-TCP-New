@@ -23,6 +23,10 @@ public class PacketManager {
         return this.packetsWithInfo;
     }
 
+    public void add(PacketWithInfo infoPkt){
+        this.packetsWithInfo.add(infoPkt);
+    }
+
     public Statistics getStatistics(){
         return this.statistics;
     }

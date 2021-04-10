@@ -1,4 +1,5 @@
 import java.net.DatagramSocket;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.file.*;
@@ -66,46 +67,67 @@ public class TCPSend {
 
     // T2: Find NEW data in buffer and add them to PacketManager
     private  class NewPacketSender implements Runnable {
+        private InetAddress remoteIp; 
+        private int remotePort;
+        
+
+        public NewPacketSender( InetAddress remoteIP,int remotePort ){
+            this.remoteIp = remoteIP;
+            this.remotePort = remotePort;
+            
+        }
+
         public void run() {
             try{
-                //check if 1 mtu data available 
-                int seqNum; 
-                if(sendBuffer.getAvailableDataSize() >= mtu){
-                    //send to manager 1 mtu if so
+                //check if 1 mtu data available or have no unAcked data in sendBuffer
+                int seqNum;  
+                if(sendBuffer.getAvailableDataSize() >= mtu || (sendBuffer.getLastByteACK() == sendBuffer.getLastByteSent()) ){
+
                     seqNum = sendBuffer.getLastByteSent() +1; 
-                    byte[] data = sendBuffer.getDataToSend(mtu);
-                    Packet newPkt = new Packet(seqNum, System.currentTimeMillis()); 
-                    Packet.setDataAndLength(newPkt, data);
-                    Packet.setFlag(newPkt,false, false, true);
-                    //TODO: get ACK number
-                    
+                    byte[] data = sendBuffer.getDataToSend(mtu); //lastByteSent updated
+
+                    //make tcp packet with the data 
+                    Packet tcpPkt = makePacket( seqNum,  data);
+                    //make and send udp pkt 
+                    byte[] udpData = Packet.serialize(tcpPkt);
+                    DatagramPacket udpPkt = new DatagramPacket(udpData, udpData.length, remoteIp, remotePort);
+                    udpSocket.send(udpPkt); 
+
+                    //insert to packet manager 
+                    PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt, tcpPkt.getTimeStamp()); 
+                    packetManager.add(infoPkt);         
 
                 }else{
-                    if(sendBuffer.getLastByteACK() == sendBuffer.getLastByteSent()){
-                        //send all available data 
-                    }else{
-                        // wait 
-                    }
+                    //wait for more data 
+                    //TODO: not sure if this is necessary, will encounter situatoin where the sender buffer has less than mtu bytes unsent ? 
+                    try{
+                        wait();
+                    } catch (InterruptedException e) {}
+                
                 }
 
             }catch(Exception e){
-                System.out.println(e.getMessage());
-            }
-
-       
+                //TODO: different actions for different exceptions 
+                //exceptions from datagram socket 
+                //self defined exceptions 
+                System.out.println(e);
                 
-          
-            //make packet with the data 
-            //change last byte sent 
-            //send data with the socket 
-            //put it into packet with info
-            //insert to packet manager 
+            }
+            
 
         }
 
-        public Packet makePacket(){
-            return null; 
+        public Packet makePacket(int seqNum, byte[] data){
+            Packet newPkt = new Packet(seqNum, System.currentTimeMillis()); 
+            Packet.setDataAndLength(newPkt, data);
+            Packet.setFlag(newPkt,false, false, true);
+            //TODO: get ACK number, set ACK number
+            Packet.calculateAndSetChecksum(newPkt);
+
+            return newPkt; 
         }
+
+         
     }
     
     // TCPSend Constructor
@@ -121,7 +143,7 @@ public class TCPSend {
         try {
             udpSocket = new DatagramSocket(localPort);
             Thread T1_fileToBuffer = new Thread(new FileToBuffer());
-            Thread T2_newPacketSender = new Thread(new NewPacketSender());
+            Thread T2_newPacketSender = new Thread(new NewPacketSender( remoteIp, remotePort));
             
             T1_fileToBuffer.start();
             T2_newPacketSender.start();
