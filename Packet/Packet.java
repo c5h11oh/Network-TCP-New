@@ -79,6 +79,22 @@ public class Packet {
         }
     }
 
+    public static boolean checkSYN(Packet pkt){
+        int SYN = pkt.lengthAndFlag & 4;
+        return (SYN == 0)? false:true; 
+    }
+
+    public static boolean checkFIN(Packet pkt){
+        int FIN = pkt.lengthAndFlag & 2;
+        return (FIN == 0)? false:true; 
+    }
+
+    public static boolean checkACK(Packet pkt){
+        int ACK = pkt.lengthAndFlag & 1;
+        return (ACK == 0)? false:true; 
+    }
+
+
     public static void clearFlag(Packet packet){
         packet.lengthAndFlag &= (Integer.MAX_VALUE - 7);
     }
@@ -115,6 +131,23 @@ public class Packet {
 
     public long getTimeStamp(){
         return this.timeStamp;
+    }
+
+    public void setACK( int ACK){
+        this.ACK = ACK; 
+    }
+
+    public int getByteSeqNum(){
+        return this.byteSeqNum;
+    }
+
+    public boolean verifyChecksum(){
+        int computed = calculateChecksum(this);
+        if( this.paddedChecksum != computed){
+            return false;
+        }else{
+            return true;
+        }
     }
 
     

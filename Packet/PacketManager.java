@@ -27,6 +27,23 @@ public class PacketManager {
         this.packetsWithInfo.add(infoPkt);
     }
 
+    public void setRemoteSeq(int remoteSeq){
+        this.remoteSequenceNumberCounter = remoteSeq;
+    }
+
+    public int getRemoteSequenceNumberCounter(){
+        return this.remoteSequenceNumberCounter;
+    }
+
+    public int getLocalSequenceNumberCounter(){
+        return this.localSequenceNumberCounter;
+    }
+
+    public void setLocalSequenceNumberCounter( int localSeq){
+        this.localSequenceNumberCounter = localSeq;
+        return;
+    }
+
     public Statistics getStatistics(){
         return this.statistics;
     }

@@ -2,6 +2,7 @@ import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.file.*;
 
 import Packet.*;
@@ -20,6 +21,8 @@ public class TCPSend {
     Path filePath;
     int mtu; 
     DatagramSocket udpSocket;
+    int initTimeOut = 5*1000; //in ms
+    
     
     /****************** Runnable objects (Thread works) ******************/
     // T1: Application that puts file data into send buffer
@@ -87,10 +90,10 @@ public class TCPSend {
                     byte[] data = sendBuffer.getDataToSend(mtu); //lastByteSent updated
 
                     //make tcp packet with the data 
-                    Packet tcpPkt = makePacket( seqNum,  data);
+                    Packet tcpPkt = makeDataPacket( seqNum,  data);
                     //make and send udp pkt 
-                    byte[] udpData = Packet.serialize(tcpPkt);
-                    DatagramPacket udpPkt = new DatagramPacket(udpData, udpData.length, remoteIp, remotePort);
+                    
+                    DatagramPacket udpPkt = toUDP(tcpPkt, remoteIp, remotePort);
                     udpSocket.send(udpPkt); 
 
                     //insert to packet manager 
@@ -117,11 +120,12 @@ public class TCPSend {
 
         }
 
-        public Packet makePacket(int seqNum, byte[] data){
+        public Packet makeDataPacket(int seqNum, byte[] data){
             Packet newPkt = new Packet(seqNum, System.currentTimeMillis()); 
             Packet.setDataAndLength(newPkt, data);
             Packet.setFlag(newPkt,false, false, true);
-            //TODO: get ACK number, set ACK number
+            //TODO: verify if this variable is the correct ACK 
+            newPkt.setACK(packetManager.getRemoteSequenceNumberCounter());
             Packet.calculateAndSetChecksum(newPkt);
 
             return newPkt; 
@@ -142,6 +146,8 @@ public class TCPSend {
     public void work(int localPort, InetAddress remoteIp, int remotePort) throws InterruptedException {
         try {
             udpSocket = new DatagramSocket(localPort);
+            //try to handshake until connection established 
+            while(! estConnection(remoteIp, remotePort)){}
             Thread T1_fileToBuffer = new Thread(new FileToBuffer());
             Thread T2_newPacketSender = new Thread(new NewPacketSender( remoteIp, remotePort));
             
@@ -157,8 +163,74 @@ public class TCPSend {
         }
     }
 
+    public boolean estConnection( InetAddress remoteIp, int remotePort){
+        //datagram connect
+        try{
+        udpSocket.connect(remoteIp, remotePort);
+
+        Packet synPkt = new Packet(packetManager.getLocalSequenceNumberCounter(),System.currentTimeMillis());
+        Packet.setFlag(synPkt, true, false, false);
+        Packet.calculateAndSetChecksum(synPkt);
+        //send SYN
+        DatagramPacket udpSyn = toUDP(synPkt, remoteIp, remotePort);
+        udpSocket.send(udpSyn);
+        //wait to receive SYN+ ACK
+        udpSocket.setSoTimeout(initTimeOut);
+        byte[] r = new byte[256]; //pkt buffer from reverse direction 
+        DatagramPacket dgR = new DatagramPacket(r, r.length); //datagram of r 
+        udpSocket.receive(dgR);
+
+        
+        //checksum 
+        Packet synAckPkt = Packet.deserialize(r);
+        if(! synAckPkt.verifyChecksum()){
+            return false; 
+        }
+        //check flag
+        if(! ( Packet.checkSYN(synAckPkt) && Packet.checkACK(synAckPkt)) ){
+            return false; 
+        }
+        //update remote seqNum 
+        packetManager.setRemoteSeq(synAckPkt.getByteSeqNum());
+        //TODO: calculate timeout 
+       
+        //reply with ACK
+        Packet ackPkt = new Packet();
+        //TODO: to be continued 
+
+
+
+
+        //return false if timeout
+        }catch(SocketTimeoutException ste){
+            //retransmit if timeout (init timeout = 5
+            System.out.println(ste);
+            return false; 
+        }
+        catch( Exception e) {
+            //IllegalArgumentException from connect() - if the IP address is null, or the port is out of range
+            //other IOException 
+
+        }
+        return false; 
+    }
+
+
+
     public String getStatisticsString(){
         Statistics statistics = this.packetManager.getStatistics();
         return "Statistics not ready!";
     }
+
+    /*
+    encapsulate a tcp pkt to udp pkt 
+    */
+    public DatagramPacket toUDP( Packet pkt, InetAddress remoteIp, int remotePort){
+        byte[] data = Packet.serialize(pkt);
+        DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
+        return udpPkt; 
+    }
+
+    
 }
+
