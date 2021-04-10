@@ -156,6 +156,8 @@ public class TCPSend {
             
             T1_fileToBuffer.join();
             T2_newPacketSender.join();
+
+            
         }
         catch (SocketException e) {
             System.err.println("SocketException: " + e);
