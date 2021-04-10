@@ -12,6 +12,11 @@ public class Packet {
     private byte[] data;
 
     public Packet(){}
+    public Packet( int byteSeqNum, long timeStamp){
+        this.byteSeqNum = byteSeqNum;
+        this.timeStamp = timeStamp; 
+
+    }
     public Packet(Packet src){
         this.ACK = src.ACK;
         this.byteSeqNum = src.byteSeqNum;
@@ -20,6 +25,8 @@ public class Packet {
         this.paddedChecksum = src.paddedChecksum;
         this.timeStamp = src.timeStamp;
     }
+
+    
     
     public static byte[] serialize(Packet packet){
         int size = 6 * 4 + (packet.data == null ? 0 : packet.data.length);
@@ -56,6 +63,10 @@ public class Packet {
         packet.data = data;
         packet.lengthAndFlag &= 7; // Clear data, keep flag
         packet.lengthAndFlag |= (data.length << 3); // Set data
+    }
+
+    public void setPaddedCheckSum(int paddedChecksum){
+        this.paddedChecksum = paddedChecksum;
     }
 
     public static void setFlag(Packet packet, boolean SYN, boolean FIN, boolean ACK){

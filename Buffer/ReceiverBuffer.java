@@ -2,6 +2,9 @@ package Buffer;
 
 import Exceptions.*;
 
+//receiver: java TCPend -p <port> -m <mtu> -c <sws> -f <file name>
+
+
 public class ReceiverBuffer extends Buffer {
     /* "Pointers" that are indices of the buffer. Check validility by AssertValidPointers() */
     private int lastByteRead;
@@ -11,8 +14,8 @@ public class ReceiverBuffer extends Buffer {
     /* Indicators of thread `DataReceiver` has retrieved all data and put in buffer */
     private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
     
-    public ReceiverBuffer(int bufferSize, int windowSize) throws BufferSizeException {
-        super(++bufferSize, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
+    public ReceiverBuffer(int bufferSize, int mtu, int windowSize) throws BufferSizeException {
+        super(++bufferSize, mtu, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
         // The `lastByteRead` byte cannot be written even if `lastByteRead == nextByteExpected`. 
         // If `lastByteRead == nextByteExpected`, the free space is 0 and getData() must be called.
         lastByteRead = bufferSize - 1;
@@ -36,7 +39,7 @@ public class ReceiverBuffer extends Buffer {
     }
 
     public int checkFreeSpace(){ // `lastByteRead` is NOT free
-        if (nextByteExpected == lastByteRead){
+        if (nextByteExpected == lastByteRead){ 
             return 0;
         }
         else if (nextByteExpected > lastByteRead) { // not wrapped

@@ -17,6 +17,8 @@ public class TCPSend {
     SenderBuffer sendBuffer;
     PacketManager packetManager;
     Path filePath;
+    int mtu; 
+    DatagramSocket udpSocket;
     
     /****************** Runnable objects (Thread works) ******************/
     // T1: Application that puts file data into send buffer
@@ -63,9 +65,46 @@ public class TCPSend {
     }
 
     // T2: Find NEW data in buffer and add them to PacketManager
-    private static class NewPacketSender implements Runnable {
+    private  class NewPacketSender implements Runnable {
         public void run() {
+            try{
+                //check if 1 mtu data available 
+                int seqNum; 
+                if(sendBuffer.getAvailableDataSize() >= mtu){
+                    //send to manager 1 mtu if so
+                    seqNum = sendBuffer.getLastByteSent() +1; 
+                    byte[] data = sendBuffer.getDataToSend(mtu);
+                    Packet newPkt = new Packet(seqNum, System.currentTimeMillis()); 
+                    Packet.setDataAndLength(newPkt, data);
+                    Packet.setFlag(newPkt,false, false, true);
+                    //TODO: get ACK number
+                    
 
+                }else{
+                    if(sendBuffer.getLastByteACK() == sendBuffer.getLastByteSent()){
+                        //send all available data 
+                    }else{
+                        // wait 
+                    }
+                }
+
+            }catch(Exception e){
+                System.out.println(e.getMessage());
+            }
+
+       
+                
+          
+            //make packet with the data 
+            //change last byte sent 
+            //send data with the socket 
+            //put it into packet with info
+            //insert to packet manager 
+
+        }
+
+        public Packet makePacket(){
+            return null; 
         }
     }
     
@@ -74,11 +113,13 @@ public class TCPSend {
         sendBuffer = new SenderBuffer(bufferSize, mtu, windowSize);
         packetManager = new PacketManager(windowSize);
         filePath = Paths.get(fileName);
+        this.mtu = mtu; 
     }
 
     // Main running program
     public void work(int localPort, InetAddress remoteIp, int remotePort) throws InterruptedException {
-        try (DatagramSocket udpSocket = new DatagramSocket(localPort)) {
+        try {
+            udpSocket = new DatagramSocket(localPort);
             Thread T1_fileToBuffer = new Thread(new FileToBuffer());
             Thread T2_newPacketSender = new Thread(new NewPacketSender());
             

@@ -6,7 +6,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import Statistics.*;
 
 public class PacketManager {
-    private final int windowsSize;
+    private final int windowsSize; //in number of segments
     private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
     private Statistics statistics;
     private int localSequenceNumberCounter;
