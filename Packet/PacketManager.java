@@ -6,7 +6,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import Statistics.*;
 
 public class PacketManager {
-    private final int windowsSize;
+    private final int windowsSize; //in number of segments
     private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
     private Statistics statistics;
     private int localSequenceNumberCounter;
@@ -21,6 +21,27 @@ public class PacketManager {
 
     public PriorityBlockingQueue<PacketWithInfo> getQueue(){
         return this.packetsWithInfo;
+    }
+
+    public void add(PacketWithInfo infoPkt){
+        this.packetsWithInfo.add(infoPkt);
+    }
+
+    public void setRemoteSeq(int remoteSeq){
+        this.remoteSequenceNumberCounter = remoteSeq;
+    }
+
+    public int getRemoteSequenceNumberCounter(){
+        return this.remoteSequenceNumberCounter;
+    }
+
+    public int getLocalSequenceNumberCounter(){
+        return this.localSequenceNumberCounter;
+    }
+
+    public void setLocalSequenceNumberCounter( int localSeq){
+        this.localSequenceNumberCounter = localSeq;
+        return;
     }
 
     public Statistics getStatistics(){

@@ -12,6 +12,11 @@ public class Packet {
     private byte[] data;
 
     public Packet(){}
+    public Packet( int byteSeqNum, long timeStamp){
+        this.byteSeqNum = byteSeqNum;
+        this.timeStamp = timeStamp; 
+
+    }
     public Packet(Packet src){
         this.ACK = src.ACK;
         this.byteSeqNum = src.byteSeqNum;
@@ -20,6 +25,8 @@ public class Packet {
         this.paddedChecksum = src.paddedChecksum;
         this.timeStamp = src.timeStamp;
     }
+
+    
     
     public static byte[] serialize(Packet packet){
         int size = 6 * 4 + (packet.data == null ? 0 : packet.data.length);
@@ -58,6 +65,8 @@ public class Packet {
         packet.lengthAndFlag |= (data.length << 3); // Set data
     }
 
+  
+
     public static void setFlag(Packet packet, boolean SYN, boolean FIN, boolean ACK){
         if (SYN) {
             packet.lengthAndFlag |= (1 << 2);
@@ -69,6 +78,22 @@ public class Packet {
             packet.lengthAndFlag |= (1);
         }
     }
+
+    public static boolean checkSYN(Packet pkt){
+        int SYN = pkt.lengthAndFlag & 4;
+        return (SYN == 0)? false:true; 
+    }
+
+    public static boolean checkFIN(Packet pkt){
+        int FIN = pkt.lengthAndFlag & 2;
+        return (FIN == 0)? false:true; 
+    }
+
+    public static boolean checkACK(Packet pkt){
+        int ACK = pkt.lengthAndFlag & 1;
+        return (ACK == 0)? false:true; 
+    }
+
 
     public static void clearFlag(Packet packet){
         packet.lengthAndFlag &= (Integer.MAX_VALUE - 7);
@@ -102,6 +127,27 @@ public class Packet {
     public static void calculateAndSetChecksum(Packet packet){
         int calculateChecksum = calculateChecksum(packet);
         packet.paddedChecksum = calculateChecksum;
+    }
+
+    public long getTimeStamp(){
+        return this.timeStamp;
+    }
+
+    public void setACK( int ACK){
+        this.ACK = ACK; 
+    }
+
+    public int getByteSeqNum(){
+        return this.byteSeqNum;
+    }
+
+    public boolean verifyChecksum(){
+        int computed = calculateChecksum(this);
+        if( this.paddedChecksum != computed){
+            return false;
+        }else{
+            return true;
+        }
     }
 
     

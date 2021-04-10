@@ -27,6 +27,8 @@ public class SenderBuffer extends Buffer {
         return this.lastByteSent;
     }
 
+    
+
     public synchronized int getLastByteWritten(){
         return this.lastByteWritten;
     }
@@ -43,6 +45,7 @@ public class SenderBuffer extends Buffer {
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
         if (nextByteExpected == lastByteACK) {
             return 0;
+            //TODO: ensure no checkFreeSpace before adding data 
         }
         else if (nextByteExpected > lastByteACK) { // not wrapped
             return bufferSize - (nextByteExpected - lastByteACK);
@@ -123,7 +126,9 @@ public class SenderBuffer extends Buffer {
         }
         
         int byteToBeSent;
-        boolean wrapped = (lastByteWritten > lastByteSent);
+        boolean wrapped = (lastByteWritten > lastByteSent);//??seem like this boolean is true if not wrapped 
+
+       
 
         if (!wrapped) { // Not wrapped
             byteToBeSent = Math.min(length, lastByteWritten - lastByteSent);
@@ -149,6 +154,23 @@ public class SenderBuffer extends Buffer {
         notifyAll();
 
         return returnData; // Caller needs to confirm the return length. May not be `length`.
+    }
+
+    /*
+    This function checks how many bytes of data are ready to be sent to packet manager 
+    */    
+    public synchronized int getAvailableDataSize(){
+        int availableByte; 
+        boolean wrapped = (lastByteWritten < lastByteSent);
+
+        if (!wrapped) { // Not wrapped
+            availableByte = lastByteWritten - lastByteSent; 
+        }
+        else { // wrapped
+            availableByte = lastByteWritten + bufferSize - lastByteSent; 
+        }
+
+        return availableByte; 
     }
 
     private synchronized void AssertValidSentPointer() throws InvalidPointerException{
