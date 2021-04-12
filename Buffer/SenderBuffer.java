@@ -15,8 +15,8 @@ public class SenderBuffer extends Buffer {
         super(++bufferSize, mtu, windowSize);  // We add one additional byte to avoid ambiguity when wrapping.
         // The `lastByteACK` byte cannot be written even if `lastByteACK == nextByteExpected`, where `nextByteExpected = (lastByteWritten + 1) % bufferSize`. 
         // If `lastByteRead == nextByteExpected`, the free space is 0 and getDataToSend() must be called.
-        lastByteACK = lastByteSent = bufferSize - 1;
-        lastByteWritten = bufferSize - 1;
+        lastByteACK = lastByteSent = 0; // Apr 12: The first sending byte's sequence number is 1
+        lastByteWritten = 0;
     }
 
     public synchronized int getLastByteACK(){

@@ -23,8 +23,8 @@ public class TCPSend {
     DatagramSocket udpSocket;
     Timeout timeOut;
     int initTimeOutInMilli = 5 * 1000; // in ms
+    final int maxDatagramPacketLength = 1518; // in byte
 
-    
     /*********************************************************************/
     /********************** Connections and Packets **********************/
     /*********************************************************************/
@@ -226,13 +226,17 @@ public class TCPSend {
     private class ACKReceiver implements Runnable {
         public void run() {
             try{
+                byte[] b = new byte[maxDatagramPacketLength];
+                DatagramPacket p = new DatagramPacket(b, b.length);
                 while(!packetManager.isAllPacketsEnqueued()){
                     if(packetManager.getQueue().isEmpty()){
                         // No packet waiting for an ACK. Yield.
                         Thread.yield();
                     }
                     else{
-                        
+                        p.setLength(b.length);
+                        udpSocket.receive(p);
+                        Packet ACKpkt = Packet.deserialize(p.getData());
                     }
                 }
             } catch (Exception e) {}
