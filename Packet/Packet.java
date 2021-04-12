@@ -16,6 +16,12 @@ public class Packet {
         this.byteSeqNum = byteSeqNum;
         this.timeStamp = timeStamp; 
 
+        // The following values should be set. Just to be safe.
+        this.ACK = 0;
+        this.lengthAndFlag = 0;
+        this.paddedChecksum = 0;
+        this.data = null;
+
     }
     public Packet(Packet src){
         this.ACK = src.ACK;
@@ -66,7 +72,13 @@ public class Packet {
     }
 
   
-
+    /**
+     * Set (by passing in true/false) SYN, FIN, ACK flag in the Packet packet.
+     * @param packet
+     * @param SYN
+     * @param FIN
+     * @param ACK
+     */
     public static void setFlag(Packet packet, boolean SYN, boolean FIN, boolean ACK){
         if (SYN) {
             packet.lengthAndFlag |= (1 << 2);
@@ -120,7 +132,8 @@ public class Packet {
         return calculateChecksum;
     }
     
-    /* 
+    /**
+     *  
      * Should only be called when byteSeqNum, ACK, timeStamp are set and 
      * setDataAndLength() and setFlag() are called.
      */
