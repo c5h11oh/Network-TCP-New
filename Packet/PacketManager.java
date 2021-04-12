@@ -27,7 +27,7 @@ public class PacketManager {
         this.packetsWithInfo.add(infoPkt);
     }
 
-    public void setRemoteSeq(int remoteSeq){
+    public void setRemoteSequenceNumberCounter(int remoteSeq){
         this.remoteSequenceNumberCounter = remoteSeq;
     }
 
