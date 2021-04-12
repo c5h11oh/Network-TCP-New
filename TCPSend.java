@@ -4,14 +4,12 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.file.*;
+import java.io.*;
 
 import Packet.*;
 import Buffer.*;
 import Exceptions.*;
 import Statistics.Statistics;
-import java.io.*;
-import java.nio.file.*;
-
 
 public class TCPSend {
     int bufferSize = 64 * 1024;
@@ -38,7 +36,6 @@ public class TCPSend {
             udpSocket.connect(remoteIp, remotePort);
 
             Packet synPkt = new Packet(packetManager.getLocalSequenceNumber());
-            // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setFlag(synPkt, true, false, false);
             Packet.calculateAndSetChecksum(synPkt);
             // send SYN
@@ -212,10 +209,8 @@ public class TCPSend {
 
         public Packet makeDataPacket(int seqNum, byte[] data) {
             Packet newPkt = new Packet(seqNum);
-            // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setDataAndLength(newPkt, data);
             Packet.setFlag(newPkt, false, false, true);
-            // TODO: verify if this variable is the correct ACK << think should be sequence num + 1
             newPkt.setACK(packetManager.getRemoteSequenceNumber() + 1);
             Packet.calculateAndSetChecksum(newPkt);
 
