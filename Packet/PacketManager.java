@@ -53,4 +53,17 @@ public class PacketManager {
     public Statistics getStatistics(){
         return this.statistics;
     }
+
+    /*
+    This function scan through the queue and checking unexpired packets all time 
+    retransmit and set new timeout during the process
+    */
+    public synchronized Packet returnExpired(){
+        //while ! all packet enqueued
+            //if the queue not empty: cheking timout util find unexpired packet 
+            //if queue empty, sleep until sender buffer put() notify 
+        //end while, another while loop to check until queue empty 
+        return null; 
+
+    }
 }

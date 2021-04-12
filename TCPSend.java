@@ -244,7 +244,8 @@ public class TCPSend {
     }
 
     // T4 check packets in packet manager to see if any timeout 
-    // retransmission 
+    // stop checking and sleep when seeing the fisrt unexpired packet 
+    //retransmit expired
 
     private class timeOutChecker implements Runnable{
 
