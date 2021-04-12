@@ -9,13 +9,13 @@ public class PacketManager {
     private final int windowsSize; //in number of segments
     private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
     private Statistics statistics;
-    private int localSequenceNumberCounter;
-    private int remoteSequenceNumberCounter;
+    private int localSequenceNumber;
+    private int remoteSequenceNumber; // Fill in `remoteSequenceNumber + 1` in my outgoing packet's ACK field
     private boolean allPacketsEnqueued;
 
     public PacketManager(int windowSize){
         this.windowsSize = windowSize;
-        this.remoteSequenceNumberCounter = this.localSequenceNumberCounter = 0;
+        this.remoteSequenceNumber = this.localSequenceNumber = 0;
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
         this.allPacketsEnqueued = false;
@@ -25,20 +25,20 @@ public class PacketManager {
         return this.packetsWithInfo;
     }
 
-    public synchronized void setRemoteSequenceNumberCounter(int remoteSeq){
-        this.remoteSequenceNumberCounter = remoteSeq;
+    public synchronized void setRemoteSequenceNumber(int remoteSeq){
+        this.remoteSequenceNumber = remoteSeq;
     }
 
-    public synchronized int getRemoteSequenceNumberCounter(){
-        return this.remoteSequenceNumberCounter;
+    public synchronized int getRemoteSequenceNumber(){
+        return this.remoteSequenceNumber;
     }
 
-    public synchronized int getLocalSequenceNumberCounter(){
-        return this.localSequenceNumberCounter;
+    public synchronized int getLocalSequenceNumber(){
+        return this.localSequenceNumber;
     }
 
-    public synchronized void setLocalSequenceNumberCounter( int localSeq){
-        this.localSequenceNumberCounter = localSeq;
+    public synchronized void setLocalSequenceNumber( int localSeq){
+        this.localSequenceNumber = localSeq;
         return;
     }
 

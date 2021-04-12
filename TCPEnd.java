@@ -12,8 +12,8 @@ public class TCPEnd {
         // } while (command < 1 || command > 2);
 
         if(command == 1) {
-            TCPSend send = new TCPSend("FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30);
-            send.work(2608, InetAddress.getLocalHost(), 2806); // fake input
+            TCPSend send = new TCPSend(2608, InetAddress.getLocalHost(), 2806, "FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30);
+            send.work(); // fake input
             System.out.println( send.getStatisticsString() );
             System.exit(0);
         }
