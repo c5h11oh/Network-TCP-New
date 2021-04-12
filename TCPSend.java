@@ -36,7 +36,7 @@ public class TCPSend {
             udpSocket.connect(remoteIp, remotePort);
 
             Packet synPkt = new Packet(packetManager.getLocalSequenceNumberCounter(), System.nanoTime());
-            // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
+            // ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setFlag(synPkt, true, false, false);
             Packet.calculateAndSetChecksum(synPkt);
             // send SYN
@@ -44,9 +44,12 @@ public class TCPSend {
             udpSocket.send(udpSyn);
             // wait to receive SYN+ ACK
             udpSocket.setSoTimeout(initTimeOutInMilli);
-            byte[] r = new byte[256]; // pkt buffer from reverse direction
+            byte[] r = new byte[256]; // pkt buffer for reverse direction
             DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
             udpSocket.receive(dgR);
+
+            //after we receive replied ACK
+            packetManager.setLocalSequenceNumberCounter(1); //local seq increase after SYN, when send data, use buffer index as seqNum
 
             // checksum
             Packet synAckPkt = Packet.deserialize(r);
@@ -57,6 +60,10 @@ public class TCPSend {
             if (!(Packet.checkSYN(synAckPkt) && Packet.checkACK(synAckPkt))) {
                 return false;
             }
+            //check correct ACK
+            if( synAckPkt.getByteSeqNum() != 0){
+                return false;
+            }
             // update remote seqNum
             packetManager.setRemoteSequenceNumberCounter(synAckPkt.getByteSeqNum());
             
@@ -64,13 +71,20 @@ public class TCPSend {
             timeOut.update(synAckPkt);
 
             // reply with ACK
-            Packet ackPkt = new Packet();
-            // TODO: to be continued
+            Packet ackPkt = new Packet(packetManager.getLocalSequenceNumberCounter(), System.nanoTime());
+            //same seqNum start from 1 after SYN, but not increase here with ACK sent 
+            Packet.setFlag(ackPkt, false, false, true);
+            ackPkt.setACK(packetManager.getRemoteSequenceNumberCounter() +1 );
+            Packet.calculateAndSetChecksum(ackPkt);
+            //send ACK as udp
+            DatagramPacket udpAck = toUDP(ackPkt, remoteIp, remotePort);
+            udpSocket.send(udpAck);
 
             // return false if timeout
         } catch (SocketTimeoutException ste) {
             // retransmit if timeout (init timeout = 5
-            System.out.println(ste);
+           
+            System.out.println("establish connection timeout: " + ste);
             return false;
         } catch (Exception e) {
             // IllegalArgumentException from connect() - if the IP address is null, or the
@@ -165,6 +179,7 @@ public class TCPSend {
                     // insert to packet manager
                     PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt, tcpPkt.getTimeStamp());
                     packetManager.getQueue().add(infoPkt);
+                    packetManager.setLocalSequenceNumberCounter( packetManager.getLocalSequenceNumberCounter()+ data.length);
 
                 } else {
                     // wait for more data
@@ -195,7 +210,7 @@ public class TCPSend {
 
         public Packet makeDataPacket(int seqNum, byte[] data) {
             Packet newPkt = new Packet(seqNum, System.nanoTime());
-            // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
+            
             Packet.setDataAndLength(newPkt, data);
             Packet.setFlag(newPkt, false, false, true);
             // TODO: verify if this variable is the correct ACK << think should be sequence num + 1
