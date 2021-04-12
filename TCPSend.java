@@ -46,9 +46,12 @@ public class TCPSend {
             udpSocket.send(udpSyn);
             // wait to receive SYN+ ACK
             udpSocket.setSoTimeout(initTimeOutInMilli);
-            byte[] r = new byte[256]; // pkt buffer from reverse direction
+            byte[] r = new byte[256]; // pkt buffer for reverse direction
             DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
             udpSocket.receive(dgR);
+
+            //after we receive replied ACK
+            packetManager.setLocalSequenceNumber(1); //local seq increase after SYN, when send data, use buffer index as seqNum
 
             // checksum
             Packet synAckPkt = Packet.deserialize(r);
@@ -59,6 +62,10 @@ public class TCPSend {
             if (!(Packet.checkSYN(synAckPkt) && Packet.checkACK(synAckPkt))) {
                 return false;
             }
+            //check correct ACK
+            if( synAckPkt.getByteSeqNum() != 0){
+                return false;
+            }
             // update remote seqNum
             packetManager.setRemoteSequenceNumber(synAckPkt.getByteSeqNum());
             
@@ -66,13 +73,20 @@ public class TCPSend {
             timeOut.update(synAckPkt);
 
             // reply with ACK
-            Packet ackPkt = new Packet();
-            // TODO: to be continued
+            Packet ackPkt = new Packet(packetManager.getLocalSequenceNumber());
+            //same seqNum start from 1 after SYN, but not increase here with ACK sent 
+            Packet.setFlag(ackPkt, false, false, true);
+            ackPkt.setACK(packetManager.getRemoteSequenceNumber() +1 );
+            Packet.calculateAndSetChecksum(ackPkt);
+            //send ACK as udp
+            DatagramPacket udpAck = toUDP(ackPkt, remoteIp, remotePort);
+            udpSocket.send(udpAck);
 
             // return false if timeout
         } catch (SocketTimeoutException ste) {
             // retransmit if timeout (init timeout = 5
-            System.out.println(ste);
+           
+            System.out.println("establish connection timeout: " + ste);
             return false;
         } catch (Exception e) {
             // IllegalArgumentException from connect() - if the IP address is null, or the
@@ -167,6 +181,7 @@ public class TCPSend {
                     // insert to packet manager
                     PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt);
                     packetManager.getQueue().add(infoPkt);
+                    packetManager.setLocalSequenceNumber( packetManager.getLocalSequenceNumber()+ data.length);
 
                 } else {
                     // wait for more data
@@ -288,7 +303,16 @@ public class TCPSend {
         }
     }
 
-    // T4
+    // T4 check packets in packet manager to see if any timeout 
+    // retransmission 
+
+    private class timeOutChecker implements Runnable{
+
+        public void run(){
+
+            return; 
+        }
+    }
 
 
 

@@ -45,7 +45,7 @@ public class SenderBuffer extends Buffer {
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
         if (nextByteExpected == lastByteACK) {
             return 0;
-            //TODO: ensure no checkFreeSpace before adding data 
+            
         }
         else if (nextByteExpected > lastByteACK) { // not wrapped
             return bufferSize - (nextByteExpected - lastByteACK);
