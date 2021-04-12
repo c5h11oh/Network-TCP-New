@@ -21,10 +21,15 @@ public class TCPSend {
     Path filePath;
     int mtu;
     DatagramSocket udpSocket;
-    int initTimeOut = 5 * 1000; // in ms
+    Timeout timeOut;
+    int initTimeOutInMilli = 5 * 1000; // in ms
 
-    /****************** Connections and Packets ******************/
-    // Establish UDP connection
+    
+    /*********************************************************************/
+    /********************** Connections and Packets **********************/
+    /*********************************************************************/
+
+    /** Establish UDP connection and perform 3-way handshake. Return if the 3-way handshake is successful. */
     public boolean estConnection(InetAddress remoteIp, int remotePort) {
         // datagram connect
         try {
@@ -38,7 +43,7 @@ public class TCPSend {
             DatagramPacket udpSyn = toUDP(synPkt, remoteIp, remotePort);
             udpSocket.send(udpSyn);
             // wait to receive SYN+ ACK
-            udpSocket.setSoTimeout(initTimeOut);
+            udpSocket.setSoTimeout(initTimeOutInMilli);
             byte[] r = new byte[256]; // pkt buffer from reverse direction
             DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
             udpSocket.receive(dgR);
@@ -54,7 +59,9 @@ public class TCPSend {
             }
             // update remote seqNum
             packetManager.setRemoteSequenceNumberCounter(synAckPkt.getByteSeqNum());
-            // TODO: calculate timeout
+            
+            // calculate timeout
+            timeOut.update(synAckPkt);
 
             // reply with ACK
             Packet ackPkt = new Packet();
@@ -74,7 +81,7 @@ public class TCPSend {
         return false;
     }
 
-    /*
+    /**
      * encapsulate a tcp pkt to udp pkt
      */
     public DatagramPacket toUDP(Packet pkt, InetAddress remoteIp, int remotePort) {
@@ -83,8 +90,12 @@ public class TCPSend {
         return udpPkt;
     }
     
-    /****************** Runnable objects (Thread works) ******************/
-    // T1: Application that puts file data into send buffer
+    
+    /*********************************************************************/
+    /******************** Runnable objects (Threads) *********************/
+    /*********************************************************************/
+
+    /** T1: Application that puts file data into send buffer */
     private class FileToBuffer implements Runnable {
         // private SenderBuffer sendBuffer;
         // private Path filePath;
@@ -123,7 +134,7 @@ public class TCPSend {
 
     }
 
-    // T2: Find NEW data in buffer and add them to PacketManager
+    /** T2: Find NEW data in buffer and add them to PacketManager */
     private class NewPacketSender implements Runnable {
         private InetAddress remoteIp;
         private int remotePort;
@@ -153,7 +164,7 @@ public class TCPSend {
 
                     // insert to packet manager
                     PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt, tcpPkt.getTimeStamp());
-                    packetManager.add(infoPkt);
+                    packetManager.getQueue().add(infoPkt);
 
                 } else {
                     // wait for more data
@@ -165,6 +176,12 @@ public class TCPSend {
                     }
 
                 }
+                // should the above code be in a loop?
+                
+                // ...
+
+                // All buffered data has been stored as Packet in PacketManager. Set flag.
+                packetManager.setAllPacketsEnqueued();
 
             } catch (Exception e) {
                 // TODO: different actions for different exceptions
@@ -181,8 +198,8 @@ public class TCPSend {
             // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setDataAndLength(newPkt, data);
             Packet.setFlag(newPkt, false, false, true);
-            // TODO: verify if this variable is the correct ACK
-            newPkt.setACK(packetManager.getRemoteSequenceNumberCounter());
+            // TODO: verify if this variable is the correct ACK << think should be sequence num + 1
+            newPkt.setACK(packetManager.getRemoteSequenceNumberCounter() + 1);
             Packet.calculateAndSetChecksum(newPkt);
 
             return newPkt;
@@ -190,15 +207,36 @@ public class TCPSend {
 
     }
 
-    // T3:
+    // T3: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket
+    private class ACKReceiver implements Runnable {
+        public void run() {
+            try{
+                while(!packetManager.isAllPacketsEnqueued()){
+                    if(packetManager.getQueue().isEmpty()){
+                        // No packet waiting for an ACK. Yield.
+                        Thread.yield();
+                    }
+                    else{
+                        
+                    }
+                }
+            } catch (Exception e) {}
+        }
+    }
 
     // T4
 
+
+
+    /****************************************************************************/
     /****************** Constructor, main work, and statistics ******************/
+    /****************************************************************************/
+
     // TCPSend Constructor
     public TCPSend(String fileName, int mtu, int windowSize) throws SocketException, BufferSizeException {
         sendBuffer = new SenderBuffer(bufferSize, mtu, windowSize);
         packetManager = new PacketManager(windowSize);
+        timeOut = new Timeout(0.875, 0.75, initTimeOutInMilli * 1000000);
         filePath = Paths.get(fileName);
         this.mtu = mtu;
     }

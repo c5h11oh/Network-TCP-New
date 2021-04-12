@@ -11,37 +11,43 @@ public class PacketManager {
     private Statistics statistics;
     private int localSequenceNumberCounter;
     private int remoteSequenceNumberCounter;
+    private boolean allPacketsEnqueued;
 
     public PacketManager(int windowSize){
         this.windowsSize = windowSize;
         this.remoteSequenceNumberCounter = this.localSequenceNumberCounter = 0;
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
+        this.allPacketsEnqueued = false;
     }
 
     public PriorityBlockingQueue<PacketWithInfo> getQueue(){
         return this.packetsWithInfo;
     }
 
-    public void add(PacketWithInfo infoPkt){
-        this.packetsWithInfo.add(infoPkt);
-    }
-
-    public void setRemoteSequenceNumberCounter(int remoteSeq){
+    public synchronized void setRemoteSequenceNumberCounter(int remoteSeq){
         this.remoteSequenceNumberCounter = remoteSeq;
     }
 
-    public int getRemoteSequenceNumberCounter(){
+    public synchronized int getRemoteSequenceNumberCounter(){
         return this.remoteSequenceNumberCounter;
     }
 
-    public int getLocalSequenceNumberCounter(){
+    public synchronized int getLocalSequenceNumberCounter(){
         return this.localSequenceNumberCounter;
     }
 
-    public void setLocalSequenceNumberCounter( int localSeq){
+    public synchronized void setLocalSequenceNumberCounter( int localSeq){
         this.localSequenceNumberCounter = localSeq;
         return;
+    }
+
+    public synchronized void setAllPacketsEnqueued(){
+        this.allPacketsEnqueued = true;
+    }
+
+    public synchronized boolean isAllPacketsEnqueued(){
+        return this.allPacketsEnqueued;
     }
 
     public Statistics getStatistics(){
