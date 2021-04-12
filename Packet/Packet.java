@@ -11,10 +11,12 @@ public class Packet {
     private int paddedChecksum;
     private byte[] data;
 
-    public Packet(){}
-    public Packet( int byteSeqNum, long timeStamp){
+    public Packet(){
+        setTimeStampToCurrent();
+    }
+    public Packet( int byteSeqNum){
         this.byteSeqNum = byteSeqNum;
-        this.timeStamp = timeStamp; 
+        setTimeStampToCurrent();
 
         // The following values should be set. Just to be safe.
         this.ACK = 0;
@@ -32,7 +34,9 @@ public class Packet {
         this.timeStamp = src.timeStamp;
     }
 
-    
+    public void setTimeStampToCurrent(){
+        this.timeStamp = System.nanoTime();
+    }
     
     public static byte[] serialize(Packet packet){
         int size = 6 * 4 + (packet.data == null ? 0 : packet.data.length);

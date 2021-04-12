@@ -12,7 +12,6 @@ import Statistics.Statistics;
 import java.io.*;
 import java.nio.file.*;
 
-/* java TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws> */
 
 public class TCPSend {
     int bufferSize = 64 * 1024;
@@ -24,6 +23,9 @@ public class TCPSend {
     Timeout timeOut;
     int initTimeOutInMilli = 5 * 1000; // in ms
     final int maxDatagramPacketLength = 1518; // in byte
+    final int localPort;
+    final InetAddress remoteIp;
+    final int remotePort;
 
     /*********************************************************************/
     /********************** Connections and Packets **********************/
@@ -35,7 +37,7 @@ public class TCPSend {
         try {
             udpSocket.connect(remoteIp, remotePort);
 
-            Packet synPkt = new Packet(packetManager.getLocalSequenceNumberCounter(), System.nanoTime());
+            Packet synPkt = new Packet(packetManager.getLocalSequenceNumber());
             // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setFlag(synPkt, true, false, false);
             Packet.calculateAndSetChecksum(synPkt);
@@ -58,7 +60,7 @@ public class TCPSend {
                 return false;
             }
             // update remote seqNum
-            packetManager.setRemoteSequenceNumberCounter(synAckPkt.getByteSeqNum());
+            packetManager.setRemoteSequenceNumber(synAckPkt.getByteSeqNum());
             
             // calculate timeout
             timeOut.update(synAckPkt);
@@ -163,7 +165,7 @@ public class TCPSend {
                     udpSocket.send(udpPkt);
 
                     // insert to packet manager
-                    PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt, tcpPkt.getTimeStamp());
+                    PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt);
                     packetManager.getQueue().add(infoPkt);
 
                 } else {
@@ -194,12 +196,12 @@ public class TCPSend {
         }
 
         public Packet makeDataPacket(int seqNum, byte[] data) {
-            Packet newPkt = new Packet(seqNum, System.nanoTime());
+            Packet newPkt = new Packet(seqNum);
             // TODO: ^^ Note: The timeStamp should be in nanoseconds (specified in 2.1.1)
             Packet.setDataAndLength(newPkt, data);
             Packet.setFlag(newPkt, false, false, true);
             // TODO: verify if this variable is the correct ACK << think should be sequence num + 1
-            newPkt.setACK(packetManager.getRemoteSequenceNumberCounter() + 1);
+            newPkt.setACK(packetManager.getRemoteSequenceNumber() + 1);
             Packet.calculateAndSetChecksum(newPkt);
 
             return newPkt;
@@ -212,19 +214,77 @@ public class TCPSend {
         public void run() {
             try{
                 byte[] b = new byte[maxDatagramPacketLength];
-                DatagramPacket p = new DatagramPacket(b, b.length);
-                while(!packetManager.isAllPacketsEnqueued()){
+                DatagramPacket ACKpktSerial = new DatagramPacket(b, b.length);
+                
+                /** 
+                 * lastACKnum can be used by two ways. 
+                 * 2. If new ACK num < lastACKnum, we know that the ACK num/ByteSeqNum wraps, so
+                 *    we need to remove packets accordingly.
+                 */
+                int lastACKnum = 0; // If the new received ACK# is smaller than `lastACKnum`, it may imply a sequence number wrap has occured.
+                
+                while(!packetManager.isAllPacketsEnqueued() || !packetManager.getQueue().isEmpty()){
                     if(packetManager.getQueue().isEmpty()){
                         // No packet waiting for an ACK. Yield.
                         Thread.yield();
                     }
                     else{
-                        p.setLength(b.length);
-                        udpSocket.receive(p);
-                        Packet ACKpkt = Packet.deserialize(p.getData());
+                        ACKpktSerial.setLength(b.length);
+                        udpSocket.receive(ACKpktSerial);
+                        Packet ACKpkt = Packet.deserialize(ACKpktSerial.getData());
+                        int ACKnum = ACKpkt.ACK;
+                        if (ACKnum == lastACKnum){
+                            PacketWithInfo pp = null;
+                            for (PacketWithInfo p : packetManager.getQueue()) {
+                                if(p.packet.byteSeqNum == ACKnum){
+                                    pp = p;
+                                    p.ACKcount++;
+                                    break;
+                                }
+                            }
+                            if (pp == null){
+                                throw new DupACKPacketNotExistException();
+                            }
+                            
+                            // Check triple dup ACK?
+                            if (pp.ACKcount == 4) { // triple dup ACK
+                                // Make resend packet with info
+                                PacketWithInfo resndPWI = pp.getResendPacketWithInfo(packetManager.getRemoteSequenceNumber());
+                                // Resend packet
+                                udpSocket.send(toUDP(resndPWI.packet, remoteIp, remotePort));
+                                // Update PacketManager (remove old, add new)
+                                assert packetManager.getQueue().remove(pp) == true;
+                                packetManager.getQueue().add(resndPWI);
+                            }
+                        }
+                        else if (ACKnum > lastACKnum) {
+                            for(PacketWithInfo p : packetManager.getQueue()){
+                                if (p.packet.byteSeqNum < ACKnum){
+                                    assert packetManager.getQueue().remove(p) == true;
+                                }
+                                else if (p.packet.byteSeqNum == ACKnum){
+                                    p.ACKcount++;
+                                }
+                            }
+                        }
+                        else { // wrapped
+                            for(PacketWithInfo p : packetManager.getQueue()){
+                                if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
+                                    assert packetManager.getQueue().remove(p) == true;
+                                }
+                                else if (p.packet.byteSeqNum == ACKnum){
+                                    p.ACKcount++;
+                                }
+                            }
+                        }
+
+                        lastACKnum = ACKnum;
                     }
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                System.err.println("T3-ACK_Receiver: An error occured:");
+                System.err.println(e);
+            }
         }
     }
 
@@ -236,8 +296,12 @@ public class TCPSend {
     /****************** Constructor, main work, and statistics ******************/
     /****************************************************************************/
 
+    /* java TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws> */
     // TCPSend Constructor
-    public TCPSend(String fileName, int mtu, int windowSize) throws SocketException, BufferSizeException {
+    public TCPSend(int localPort, InetAddress remoteIp, int remotePort, String fileName, int mtu, int windowSize) throws SocketException, BufferSizeException {
+        this.localPort = localPort;
+        this.remoteIp = remoteIp;
+        this.remotePort = remotePort;
         sendBuffer = new SenderBuffer(bufferSize, mtu, windowSize);
         packetManager = new PacketManager(windowSize);
         timeOut = new Timeout(0.875, 0.75, initTimeOutInMilli * 1000000);
@@ -246,7 +310,7 @@ public class TCPSend {
     }
 
     // Main running program
-    public void work(int localPort, InetAddress remoteIp, int remotePort) throws InterruptedException {
+    public void work() throws InterruptedException {
         try {
             udpSocket = new DatagramSocket(localPort);
             // try to handshake until connection established
