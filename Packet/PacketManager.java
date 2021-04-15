@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 // import java.util.PriorityQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.Comparator;
 
 import Statistics.*;
 import Timeout.*; 
@@ -25,6 +26,13 @@ public class PacketManager {
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
         this.allPacketsEnqueued = false;
+    }
+
+    public PacketManager( int windowSize, Comparator cmp){
+        this( windowSize);
+        packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
+        
+
     }
 
     public PriorityBlockingQueue<PacketWithInfo> getQueue(){

@@ -2,18 +2,17 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
+
 
 import Buffer.ReceiverBuffer;
 import Exceptions.BufferSizeException;
-import Packet.PacketManager;
 import Packet.*;
 
 
 //java TCPend -p <port> -m <mtu> -c <sws> -f <file name>
 public class TCPRcv{
     ReceiverBuffer rcvrBuffer;
-    RcvrPacketManager packetManager;
+    PacketManager packetManager;
     int bufferSize = 64 * 1024;
     DatagramSocket udpSocket;
     int listenPort;
@@ -28,7 +27,7 @@ public class TCPRcv{
         this.windowSize = windowSize;
         this.filename = filename; 
         rcvrBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
-        packetManager = new RcvrPacketManager();
+        packetManager = new PacketManager(windowSize, new RcvPacketComparator());
         
     }
 
@@ -49,7 +48,6 @@ public class TCPRcv{
             
             //send to pkt manager
             PacketWithInfo pp = new PacketWithInfo(pkt);
-            //TODO: a packet manager for receiver ??
             packetManager.getQueue().add(pp);
             //TODO: do not need to worry about ack count and resend count right? 
 
@@ -63,7 +61,7 @@ public class TCPRcv{
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
     */
-    public static boolean checkValidDataPacket( Packet pkt, RcvrPacketManager pkm){
+    public static boolean checkValidDataPacket( Packet pkt, PacketManager pkm){
         if(Packet.checkFIN( pkt) || Packet.checkSYN(pkt)) return false; 
         if( !Packet.checkACK(pkt)) return false; 
         if(pkt.getACK() != pkm.getLocalSequenceNumber() +1 ) return false; 
