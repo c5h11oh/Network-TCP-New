@@ -158,6 +158,10 @@ public class Packet {
         return this.byteSeqNum;
     }
 
+    public int getACK(){
+        return this.ACK;
+    }
+
     public boolean verifyChecksum(){
         int computed = calculateChecksum(this);
         if( this.paddedChecksum != computed){

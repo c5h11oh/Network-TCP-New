@@ -198,9 +198,7 @@ public class TCPSend {
                 packetManager.setAllPacketsEnqueued();
 
             } catch (Exception e) {
-                // TODO: different actions for different exceptions
-                // exceptions from datagram socket
-                // self defined exceptions
+                
                 System.out.println(e);
 
             }
