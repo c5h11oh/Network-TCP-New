@@ -305,7 +305,7 @@ public class TCPSend {
     private class timeOutChecker implements Runnable{
 
         public void run(){
-
+            packetManager.checkExpire(  udpSocket,  remotePort,  remoteIp);
             return; 
         }
     }
@@ -338,6 +338,7 @@ public class TCPSend {
             }
             Thread T1_fileToBuffer = new Thread(new FileToBuffer());
             Thread T2_newPacketSender = new Thread(new NewPacketSender(remoteIp, remotePort));
+            Thread T4_timeOutChecker = new Thread( new timeOutChecker());
 
             T1_fileToBuffer.start();
             T2_newPacketSender.start();
