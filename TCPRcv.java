@@ -13,7 +13,7 @@ import Packet.*;
 //java TCPend -p <port> -m <mtu> -c <sws> -f <file name>
 public class TCPRcv{
     ReceiverBuffer rcvrBuffer;
-    PacketManager packetManager;
+    RcvrPacketManager packetManager;
     int bufferSize = 64 * 1024;
     DatagramSocket udpSocket;
     int listenPort;
@@ -28,7 +28,7 @@ public class TCPRcv{
         this.windowSize = windowSize;
         this.filename = filename; 
         rcvrBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
-        packetManager = new PacketManager(windowSize);
+        packetManager = new RcvrPacketManager();
         
     }
 
@@ -63,7 +63,7 @@ public class TCPRcv{
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
     */
-    public static boolean checkValidDataPacket( Packet pkt, PacketManager pkm){
+    public static boolean checkValidDataPacket( Packet pkt, RcvrPacketManager pkm){
         if(Packet.checkFIN( pkt) || Packet.checkSYN(pkt)) return false; 
         if( !Packet.checkACK(pkt)) return false; 
         if(pkt.getACK() != pkm.getLocalSequenceNumber() +1 ) return false; 
