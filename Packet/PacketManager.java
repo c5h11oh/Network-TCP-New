@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 // import java.util.PriorityQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 import Statistics.*;
@@ -17,6 +18,7 @@ public class PacketManager {
     private Statistics statistics;
     private int localSequenceNumber;
     private int remoteSequenceNumber; // Fill in `remoteSequenceNumber + 1` in my outgoing packet's ACK field
+    //last continuous byte received for the receiver 
     private boolean allPacketsEnqueued;
     
 
@@ -131,6 +133,63 @@ public class PacketManager {
             } catch (InterruptedException e) {}
         }
         return true; 
+
+    }
+
+    /*
+    this function check if a given seqNum has already had a packet with the seqNum present in packet manager's queue 
+    AKA: check for duplicate packet 
+    */
+    public synchronized boolean checkDupPacket(int seqNum){
+        for( PacketWithInfo pp: this.getQueue()){
+            if(pp.packet.getACK() == seqNum){
+                return true;
+            }
+        }
+        return false; 
+    }
+
+     
+    /*
+    This function check if the packet manager contains packets with continous chunk of data after receiving a new packet 
+    should always return true: finish checking packets 
+    */
+    public synchronized boolean searchContinuous( int lastContinueByte, ArrayList<PacketWithInfo> pkts){
+        
+        if(this.getQueue().size() == 0 ){ //if all packts have been checked
+            remoteSequenceNumber=lastContinueByte;
+            packetsWithInfo.addAll(pkts);
+            return true ; 
+        }
+
+        PacketWithInfo head = this.getQueue().poll(); // remove the packet with smallest seq number and add to pkts
+        while( head.packet.getByteSeqNum() < lastContinueByte+1){
+            pkts.add(head); 
+            if(packetsWithInfo.size() == 0 ){
+                remoteSequenceNumber=lastContinueByte;
+                packetsWithInfo.addAll(pkts);
+                return true ; 
+    
+            } else{
+                head = packetsWithInfo.poll();
+            }
+        }
+
+        if( head.packet.getByteSeqNum() == lastContinueByte+1){ 
+            //if current seq number == next byte expect --> find continuous chunck
+            // update lastContinueByte and recursively search 
+            lastContinueByte = head.packet.getByteSeqNum()+ head.packet.getDataLength();
+            pkts.add(head);
+            return searchContinuous(lastContinueByte, pkts);
+        }else{
+            //if current seq number larger than next expected --> still not continuous --> return 
+            pkts.add(head);
+            remoteSequenceNumber=lastContinueByte;
+                packetsWithInfo.addAll(pkts);
+            return true ;
+
+
+        }
 
     }
 

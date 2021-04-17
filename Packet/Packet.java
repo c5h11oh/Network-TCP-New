@@ -171,5 +171,9 @@ public class Packet {
         }
     }
 
+    public int getDataLength(){
+        return this.data.length;
+    }
+
     
 }
