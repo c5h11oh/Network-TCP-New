@@ -321,7 +321,7 @@ public class TCPSend {
         this.remoteIp = remoteIp;
         this.remotePort = remotePort;
         sendBuffer = new SenderBuffer(bufferSize, mtu, windowSize);
-        packetManager = new PacketManager(windowSize);
+        packetManager = new PacketManager(windowSize, new PacketWithInfoComparator());
         timeOut = new Timeout(0.875, 0.75, initTimeOutInMilli * 1000000);
         filePath = Paths.get(fileName);
         this.mtu = mtu;

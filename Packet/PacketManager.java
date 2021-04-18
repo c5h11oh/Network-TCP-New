@@ -22,20 +22,17 @@ public class PacketManager {
     private boolean allPacketsEnqueued;
     
 
-    public PacketManager(int windowSize){
+    public PacketManager( int windowSize, Comparator<PacketWithInfo> cmp){
         this.windowsSize = windowSize;
         this.remoteSequenceNumber = this.localSequenceNumber = 0;
-        packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, new PacketWithInfoComparator());
         statistics = new Statistics();
         this.allPacketsEnqueued = false;
-    }
-
-    public PacketManager( int windowSize, Comparator cmp){
-        this( windowSize);
         packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
-        
-
     }
+
+    /*********************************************************************/
+    /**********************   Sender and Receiver   **********************/
+    /*********************************************************************/
 
     public PriorityBlockingQueue<PacketWithInfo> getQueue(){
         return this.packetsWithInfo;
@@ -69,6 +66,10 @@ public class PacketManager {
     public Statistics getStatistics(){
         return this.statistics;
     }
+
+    /*********************************************************************/
+    /**********************          Sender         **********************/
+    /*********************************************************************/
 
     /*
     This function scan through the queue and checking unexpired packets all time 
@@ -135,6 +136,10 @@ public class PacketManager {
         return true; 
 
     }
+
+    /*********************************************************************/
+    /**********************         Receiver        **********************/
+    /*********************************************************************/
 
     /*
     this function check if a given seqNum has already had a packet with the seqNum present in packet manager's queue 
