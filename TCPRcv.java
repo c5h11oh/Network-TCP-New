@@ -107,6 +107,13 @@ public class TCPRcv{
 
     }
 
+    // Thread 2: composing the data and store it in the file system
+    private class StoreFile implements Runnable {
+        public void run(){
+            
+        }
+    }
+
     /*
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
@@ -141,8 +148,8 @@ public class TCPRcv{
         
         try{
             this.udpSocket = new DatagramSocket( listenPort); //create new socket and bind to the specified port 
-            
-        //TODO: establish connection and get senderIp
+            //TODO: three way handshake
+
 
 
         }catch( SocketException se){
