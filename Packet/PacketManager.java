@@ -4,21 +4,27 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-// import java.util.PriorityQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.NoSuchElementException;
 
 import Statistics.*;
-import Timeout.*; 
 
 public class PacketManager {
     private final int windowsSize; //in number of segments
-    private PriorityBlockingQueue<PacketWithInfo> packetsWithInfo;
+    private PriorityBlockingQueue<PacketWithInfo> queue;
     private Statistics statistics;
+    /** 
+     * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using incrementLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
+     * */
     private int localSequenceNumber;
-    private int remoteSequenceNumber; // Fill in `remoteSequenceNumber + 1` in my outgoing packet's ACK field
-    //last continuous byte received for the receiver 
+    
+    /**
+     * Sender: This is the last received byte's sequence number. Fill in `remoteSequenceNumber + 1` in outgoing packet's ACK field
+     * Receiver: This is the last contiguous byte received
+     */
+    private int remoteSequenceNumber;
     private boolean allPacketsEnqueued;
     
 
@@ -27,7 +33,7 @@ public class PacketManager {
         this.remoteSequenceNumber = this.localSequenceNumber = 0;
         statistics = new Statistics();
         this.allPacketsEnqueued = false;
-        packetsWithInfo = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
+        queue = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
     }
 
     /*********************************************************************/
@@ -35,7 +41,7 @@ public class PacketManager {
     /*********************************************************************/
 
     public PriorityBlockingQueue<PacketWithInfo> getQueue(){
-        return this.packetsWithInfo;
+        return this.queue;
     }
 
     public synchronized void setRemoteSequenceNumber(int remoteSeq){
@@ -46,13 +52,32 @@ public class PacketManager {
         return this.remoteSequenceNumber;
     }
 
+    /**
+     * See localSequenceNumber's description.
+     */
     public synchronized int getLocalSequenceNumber(){
         return this.localSequenceNumber;
     }
-
-    public synchronized void setLocalSequenceNumber( int localSeq){
+    
+    /**
+     * See localSequenceNumber's description.
+     */
+    public synchronized void setLocalSequenceNumber(int localSeq){
         this.localSequenceNumber = localSeq;
         return;
+    }
+
+    /**
+     * Set localSequenceNumber by adding inc to it. Perform overflow check and wrap up value. See localSequenceNumber's description.
+     * @param inc the amount to be added to localSequenceNumber
+     */
+    public synchronized void incrementLocalSequenceNumber(int inc){
+        this.localSequenceNumber += inc;
+        if(this.localSequenceNumber < 0){
+            this.localSequenceNumber += Integer.MAX_VALUE;
+            this.localSequenceNumber += 1; 
+            // add an additional one because has one more negative number than positive number
+        }
     }
 
     public synchronized void setAllPacketsEnqueued(){
@@ -71,11 +96,11 @@ public class PacketManager {
     /**********************          Sender         **********************/
     /*********************************************************************/
 
-    /*
-    This function scan through the queue and checking unexpired packets all time 
+    /**
+    Sender T4: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
-    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp){
+    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
                 //if unexpired pkt found 
@@ -83,8 +108,8 @@ public class PacketManager {
         //end while, another while loop to check until queue empty 
 
         while( !allPacketsEnqueued){
-            if(this.packetsWithInfo.isEmpty()){
-                //notify other thread to put data and wait 
+            if(this.queue.isEmpty()){
+                // notify T2 to put packet to queue
                 notifyAll();
                 try{
                     wait();
@@ -93,48 +118,51 @@ public class PacketManager {
 
             //check packets and retransmit until find unexpired packets 
             //wait one timeout unit if unexpired found 
-            boolean retransmitted = helperCheckExpire(udpSocket, remotePort, remoteIp);
-            assert retransmitted:  "In timeout checker, retransmission error: ";     
-            
+            try {
+                helperCheckExpire(udpSocket, remotePort, remoteIp);
+            }
+            catch (NoSuchElementException e) {
+                System.err.println("PacketManager.checkExpire: queue is empty! Message: " + e);
+            }
         }
-        //now all data enqueued 
-        while( !this.packetsWithInfo.isEmpty()){
-            //check timeout and retransmist 
-            assert helperCheckExpire(udpSocket, remotePort, remoteIp): "In timeout checker, retransmission error: "; 
+        
+        // no more new packet will be put in queue. Deal with remaining packets in queue.
+        while( !this.queue.isEmpty()){
+            try {
+                helperCheckExpire(udpSocket, remotePort, remoteIp);
+            }
+            catch (NoSuchElementException e) {
+                System.err.println("PacketManager.checkExpire: queue is empty! Message: " + e);
+            }
         }
         return ; 
 
     }
 
-    private  synchronized boolean helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp){
+    private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException {
 
-        PacketWithInfo head = this.packetsWithInfo.poll(); 
+        PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
+        
+        long timeRemain = ((head.timeOut + head.packet.timeStamp) - System.nanoTime()) / 1000000; // in ms
+        // check if the frontmost packet is timeout. If so, poll such timeout packet, make a "resend packet" from it, send such "resend packet", and put "resend packet" into the packetManager. If not, wait until the 
+        if( timeRemain <= 0 ){ // timeout. retransmit the packet.
+            // remove timeout packet
+            this.queue.remove(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
             
-        //expire 
-        if( (head.timeOut + head.packet.timeStamp) < System.nanoTime() ){
-            //retransmit the packet 
-           
-
             PacketWithInfo head2 = head.getResendPacketWithInfo(this.remoteSequenceNumber);
-             //add the packet back to the manager 
-            packetsWithInfo.add(head2); 
-            //send UDP
-            try{
-            sendUDP( head2.packet, udpSocket, remotePort, remoteIp);
-            }catch( IOException e ){  return false; }
+            // add the packet back to the manager 
+            queue.add(head2); 
+            
+            // send UDP
+            sendUDP( head2.packet, udpSocket, remotePort, remoteIp); // May throw IOException
             
         }else{
-            //the current packet not timeout 
-            long waitTime = head.timeOut / (1^6); // ns to ms 
-            //put the packet back and wait for timeout time 
-            this.packetsWithInfo.add(head);
+            // the current packet not timeout 
             notifyAll();
             try{
-                wait(waitTime);
+                wait(timeRemain); 
             } catch (InterruptedException e) {}
         }
-        return true; 
-
     }
 
     /*********************************************************************/
@@ -163,20 +191,20 @@ public class PacketManager {
         
         if(this.getQueue().size() == 0 ){ //if all packts have been checked
             remoteSequenceNumber=lastContinueByte;
-            packetsWithInfo.addAll(pkts);
+            queue.addAll(pkts);
             return true ; 
         }
 
         PacketWithInfo head = this.getQueue().poll(); // remove the packet with smallest seq number and add to pkts
         while( head.packet.getByteSeqNum() < lastContinueByte+1){
             pkts.add(head); 
-            if(packetsWithInfo.size() == 0 ){
+            if(queue.size() == 0 ){
                 remoteSequenceNumber=lastContinueByte;
-                packetsWithInfo.addAll(pkts);
+                queue.addAll(pkts);
                 return true ; 
     
             } else{
-                head = packetsWithInfo.poll();
+                head = queue.poll();
             }
         }
 
@@ -190,7 +218,7 @@ public class PacketManager {
             //if current seq number larger than next expected --> still not continuous --> return 
             pkts.add(head);
             remoteSequenceNumber=lastContinueByte;
-                packetsWithInfo.addAll(pkts);
+                queue.addAll(pkts);
             return true ;
 
 

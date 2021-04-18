@@ -101,7 +101,7 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    /*
+    /**
      * Get [lastByteSent + 1, lastByteSent + 1 + length) data from buffer.
      * Advance `lastByteSent` by length.
      * Note this get function DOES advance the lastByteSent pointer, which is different 
@@ -156,7 +156,7 @@ public class SenderBuffer extends Buffer {
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    /*
+    /**
     This function checks how many bytes of data are ready to be sent to packet manager 
     */    
     public synchronized int getAvailableDataSize(){
