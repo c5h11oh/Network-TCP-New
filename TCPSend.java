@@ -186,7 +186,7 @@ public class TCPSend {
             
             // increment local sequence number
             if (data != null) {
-                packetManager.incrementLocalSequenceNumber(data.length);
+                packetManager.increaseLocalSequenceNumber(data.length);
             }
         }
 

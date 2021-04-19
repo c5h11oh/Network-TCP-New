@@ -18,14 +18,14 @@ public class PacketManager {
     private PriorityBlockingQueue<PacketWithInfo> queue;
     private Statistics statistics;
     /** 
-     * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. That is, the next packet's starting byte sequence number. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using incrementLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
+     * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. That is, the next packet's starting byte sequence number. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using increaseLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
      * Receiver: Similarly, localSequenceNumber is also the next packet's starting sequence number. While the receiver never send data, this will be changed after sending SYN and FIN.
      * */
     private int localSequenceNumber;
     
     /**
      * Sender: This is the last received byte's sequence number. Fill in `remoteSequenceNumber + 1` in outgoing packet's ACK field
-     * Receiver: stores the last contiguous byte received from the sender
+     * Receiver: stores the last continuous byte received from the sender
      */
     private int remoteSequenceNumber;
     private boolean allPacketsEnqueued;
@@ -53,6 +53,19 @@ public class PacketManager {
         this.remoteSequenceNumber = remoteSeq;
     }
 
+    /**
+     * Set remoteSequenceNumber by adding inc to it. Perform overflow check and wrap up value.
+     * @param amount the amount to be added to remoteSequenceNumber
+     */
+    public synchronized void increaseRemoteSequenceNumber(int amount){
+        this.remoteSequenceNumber += amount;
+        if(this.remoteSequenceNumber < 0){
+            this.remoteSequenceNumber += Integer.MAX_VALUE;
+            this.remoteSequenceNumber += 1; 
+            // add an additional one because has one more negative number than positive number
+        }
+    }
+
     public synchronized int getRemoteSequenceNumber(){
         return this.remoteSequenceNumber;
     }
@@ -74,10 +87,10 @@ public class PacketManager {
 
     /**
      * Set localSequenceNumber by adding inc to it. Perform overflow check and wrap up value. See localSequenceNumber's description.
-     * @param inc the amount to be added to localSequenceNumber
+     * @param amount the amount to be added to localSequenceNumber
      */
-    public synchronized void incrementLocalSequenceNumber(int inc){
-        this.localSequenceNumber += inc;
+    public synchronized void increaseLocalSequenceNumber(int amount){
+        this.localSequenceNumber += amount;
         if(this.localSequenceNumber < 0){
             this.localSequenceNumber += Integer.MAX_VALUE;
             this.localSequenceNumber += 1; 

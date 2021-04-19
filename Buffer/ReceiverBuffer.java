@@ -50,7 +50,7 @@ public class ReceiverBuffer extends Buffer {
         }
     }
 
-    /* Design: You can only put contiguous data in the buffer. All non-contiguous data are 
+    /* Design: You can only put continuous data in the buffer. All non-continuous data are 
      * stored in and managed by PacketManager as packets. Therefore, ReceiverBuffer does not 
      * need to maintain lastByteRcvd.
      */
@@ -87,20 +87,20 @@ public class ReceiverBuffer extends Buffer {
      * Get as much data as possible.
      */
     public byte[] getData() throws InvalidPointerException {
-        int lastContiguousByte = (nextByteExpected == 0) ? (bufferSize - 1) : (nextByteExpected - 1);
-        if (lastByteRead == lastContiguousByte) { 
+        int lastContinuousByte = (nextByteExpected == 0) ? (bufferSize - 1) : (nextByteExpected - 1);
+        if (lastByteRead == lastContinuousByte) { 
             // No more data
             return null;
         }
         
         int dataLength;
-        boolean wrapped = lastByteRead > lastContiguousByte;
+        boolean wrapped = lastByteRead > lastContinuousByte;
 
         if (!wrapped) { // Not wrapped
-            dataLength = lastContiguousByte - lastByteRead;
+            dataLength = lastContinuousByte - lastByteRead;
         }
         else { // wrapped
-            dataLength = lastContiguousByte + bufferSize - lastByteRead;
+            dataLength = lastContinuousByte + bufferSize - lastByteRead;
         }
         
         byte[] returnData = new byte[dataLength];
@@ -109,12 +109,12 @@ public class ReceiverBuffer extends Buffer {
             lastByteRead += dataLength;
         }
         else {
-            int endByteCount = bufferSize - lastContiguousByte - 1;
+            int endByteCount = bufferSize - lastContinuousByte - 1;
             System.arraycopy(this.buf, lastByteRead + 1, returnData, 0, endByteCount);
             System.arraycopy(this.buf, 0, returnData, endByteCount, dataLength - endByteCount);
             lastByteRead = dataLength - endByteCount - 1;
         }
-        assert lastByteRead == lastContiguousByte;
+        assert lastByteRead == lastContinuousByte;
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 

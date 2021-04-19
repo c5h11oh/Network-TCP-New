@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import Buffer.ReceiverBuffer;
 import Exceptions.BufferSizeException;
@@ -15,6 +16,7 @@ import Statistics.Statistics;
 
 public class TCPRcv{
     ReceiverBuffer rcvBuffer;
+    LinkedBlockingQueue<Packet> continuousPackets;
     PacketManager packetManager;
     int bufferSize;  // will be determined in construction: 1.5*sws*mtu
     DatagramSocket udpSocket;
@@ -35,9 +37,10 @@ public class TCPRcv{
         this.filename = filename; 
         bufferSize = mtu * windowSize * 3 / 2;
         rcvBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
+        continuousPackets = new LinkedBlockingQueue<Packet>();
         packetManager = new PacketManager(windowSize, new RcvPacketComparator());
         // Note: See PacketManager.java to get localSequenceNumber and remoteSequenceNumber's definition.
-        // packetManager's remoteSequenceNumber stores the last contiguous byte received from the sender
+        // packetManager's remoteSequenceNumber stores the last continuous byte received from the sender
         // its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)
         
     }
@@ -67,53 +70,83 @@ public class TCPRcv{
                     break;
                 }
                 
-                //send to pkt manager
-                if(pkt.getByteSeqNum()< packetManager.getRemoteSequenceNumber()+1 ){
-                    //duplicated packet, do not add to manager queue
-                    //reply ACK
-                    Packet ackPckt = makeACKPacket(packetManager);
-                    try{
-                        packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                    }catch( IOException ioe){
-                        System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when old packet received: " + ioe);
-                        System.exit(1);
-                    }
-                }else{
-                    //packets with larger sequence number 
+                // TODO: Check if the packet's sequence number is within (remoteSequenceNumber, remoteSequenceNumber + sws(windowSize) * mtu]. The sequence number may wrap. Check if the # of packets in `continuousPackets` is less than or equal to `windowSize`.
+                // (cont.) If the sequence number is valid and `continuousPackets` has less than `windowSize` packets, put the packet into packet manager. and call update function to put continuous packets into `continuousPackets` and update `remoteSequenceNumber` accordingly; if not, do nothing. the update function should call increaseRemoteSequenceNumber() to perform wrap-aware increase.
+                // (cont.) Lastly, reply an ACK with the latest `remoteSequenceNumber`.
 
-                    //check dup
-                    //update remote seq num if no dup && ==
-                    //reply ACK 
-
-                    if( ! packetManager.checkDupPacket(pkt.getByteSeqNum())){
-                        PacketWithInfo pp = new PacketWithInfo(pkt);
-                        packetManager.getQueue().add(pp);
-
-                        if(pkt.getByteSeqNum() == packetManager.getRemoteSequenceNumber()+1){
-                            int lastContinueByte = pkt.getByteSeqNum() + pkt.getDataLength() - 1;
-                            ArrayList<PacketWithInfo> pkts = new ArrayList<>();
-                            packetManager.searchContinuous( lastContinueByte, pkts);//search for continuous chunk after adding this packet, update remoteSequenceNumber
-                        } 
-
-                    }
-
-                    //if larger seq number ( out-of-order packet): reply ACK without update remote seq num 
-                    Packet ackPckt = makeACKPacket(packetManager);
-                    try{
-                        packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                    }catch( IOException ioe){
-                        System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
-                        System.exit(1);
-                    }
+                int lowerBound = packetManager.getRemoteSequenceNumber();
+                int upperBound = lowerBound + windowSize * mtu;
+                boolean overflow = false;
+                if (upperBound < 0) { /* overflow */ 
+                    overflow = true;
+                    upperBound += Integer.MAX_VALUE; upperBound += 1; 
                 }
+
+                if ( (!overflow && (pkt.byteSeqNum <= lowerBound || pkt.byteSeqNum > upperBound)) ||
+                     ( overflow &&  pkt.byteSeqNum <= lowerBound && pkt.byteSeqNum > upperBound )       ) {
+                        // outside window packet. do nothing.
+                }
+                else {
+                        // new packet in window range. put it in packetManager. update `continuousPackets` and `remoteSequenceNumber`.
+                    PacketWithInfo pwi = new PacketWithInfo(pkt);
+                    packetManager.getQueue().add(pwi);
+                    updateContinuousByteInfo();
+                }
+
+                // send ACK packet
+
+                
+                // //send to pkt manager
+                // if(pkt.getByteSeqNum()< packetManager.getRemoteSequenceNumber()+1 ){
+                //     //duplicated packet, do not add to manager queue
+                //     //reply ACK
+                //     Packet ackPckt = makeACKPacket(packetManager);
+                //     try{
+                //         packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
+                //     }catch( IOException ioe){
+                //         System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when old packet received: " + ioe);
+                //         System.exit(1);
+                //     }
+                // }else{
+                //     //packets with larger sequence number 
+
+                //     //check dup
+                //     //update remote seq num if no dup && ==
+                //     //reply ACK 
+
+                //     if( ! packetManager.checkDupPacket(pkt.getByteSeqNum())){
+                //         PacketWithInfo pp = new PacketWithInfo(pkt);
+                //         packetManager.getQueue().add(pp);
+
+                //         if(pkt.getByteSeqNum() == packetManager.getRemoteSequenceNumber()+1){
+                //             int lastContinueByte = pkt.getByteSeqNum() + pkt.getDataLength() - 1;
+                //             ArrayList<PacketWithInfo> pkts = new ArrayList<>();
+                //             packetManager.searchContinuous( lastContinueByte, pkts);//search for continuous chunk after adding this packet, update remoteSequenceNumber
+                //         } 
+
+                //     }
+
+                //     //if larger seq number ( out-of-order packet): reply ACK without update remote seq num 
+                //     Packet ackPckt = makeACKPacket(packetManager);
+                //     try{
+                //         packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
+                //     }catch( IOException ioe){
+                //         System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
+                //         System.exit(1);
+                //     }
+                // }
             } // end of while(true)
 
-            // TODO: Close connection
+            // TODO: After receiving FIN we reach here. Need to tell other threads in this receiving side that no more packets will come and send appropriate packets to sender to close connection.
+        }
+
+        private void updateContinuousByteInfo(){
+            // TODO: Sven
         }
 
     }
 
-    /** Thread 2: get contiguous packets and put it into buffer */
+    /** Thread 2: get continuous packets and put it into buffer */
     private class PacketToBuffer implements Runnable {
         public void run() {
 
