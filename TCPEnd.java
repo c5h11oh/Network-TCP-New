@@ -18,7 +18,9 @@ public class TCPEnd {
             System.exit(0);
         }
         else if (command == 2){
-            System.out.println("Receiver has not been written. Abort.");
+            TCPRcv rcv = new TCPRcv(2806, 1400, 30, "receive.pdf");
+            rcv.work();
+            System.out.println( rcv.getStatisticsString() );
             System.exit(0);
         }
         

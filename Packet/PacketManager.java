@@ -18,13 +18,14 @@ public class PacketManager {
     private PriorityBlockingQueue<PacketWithInfo> queue;
     private Statistics statistics;
     /** 
-     * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using incrementLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
+     * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. That is, the next packet's starting byte sequence number. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using incrementLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
+     * Receiver: Similarly, localSequenceNumber is also the next packet's starting sequence number. While the receiver never send data, this will be changed after sending SYN and FIN.
      * */
     private int localSequenceNumber;
     
     /**
      * Sender: This is the last received byte's sequence number. Fill in `remoteSequenceNumber + 1` in outgoing packet's ACK field
-     * Receiver: This is the last contiguous byte received
+     * Receiver: stores the last contiguous byte received from the sender
      */
     private int remoteSequenceNumber;
     private boolean allPacketsEnqueued;

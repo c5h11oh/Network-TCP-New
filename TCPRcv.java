@@ -8,14 +8,15 @@ import java.util.ArrayList;
 import Buffer.ReceiverBuffer;
 import Exceptions.BufferSizeException;
 import Packet.*;
+import Statistics.Statistics;
 
 
 //java TCPend -p <port> -m <mtu> -c <sws> -f <file name>
 
 public class TCPRcv{
-    ReceiverBuffer rcvrBuffer;
+    ReceiverBuffer rcvBuffer;
     PacketManager packetManager;
-    int bufferSize = 64 * 1024;
+    int bufferSize;  // will be determined in construction: 1.5*sws*mtu
     DatagramSocket udpSocket;
     int listenPort; //local port 
     int mtu;
@@ -25,90 +26,102 @@ public class TCPRcv{
     //remote Ip and port 
     InetAddress senderIp; 
     int senderPort; 
+    Statistics statistics;
 
     public TCPRcv(int listenPort, int mtu, int windowSize, String filename) throws BufferSizeException{
         this.listenPort = listenPort;
         this.mtu = mtu;
         this.windowSize = windowSize;
         this.filename = filename; 
-        rcvrBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
+        bufferSize = mtu * windowSize * 3 / 2;
+        rcvBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
         packetManager = new PacketManager(windowSize, new RcvPacketComparator());
-        //packetManager's remoteSequenceNumber stores the last continuous byte received from the sender
-        //its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)
+        // Note: See PacketManager.java to get localSequenceNumber and remoteSequenceNumber's definition.
+        // packetManager's remoteSequenceNumber stores the last contiguous byte received from the sender
+        // its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)
         
     }
 
     //Thread 1: receive byte, checksum, store to pkt manager and call pkt manager's function to reply ACK
     private class ByteRcvr implements Runnable{
 
-        
-
         public void run(){
-            //receiving new UDP packet 
-            byte[] b = new byte[maxDatagramPacketLength];
-            DatagramPacket p = new DatagramPacket(b, maxDatagramPacketLength);
-            try{
-                udpSocket.receive(p);
-            }catch(IOException ioe ){
-                System.out.println("In TCPRcv ByteRcvr: " + ioe);
-            }
-
-            Packet pkt = Packet.deserialize(b);
-            assert checkValidDataPacket(pkt, packetManager): "corrupted data packet received";
-            
-            //send to pkt manager
-            if(pkt.getByteSeqNum()< packetManager.getRemoteSequenceNumber()+1 ){
-                //duplicated packet, do not add to manager queue
-                //reply ACK
-                Packet ackPckt = makeACKPacket(packetManager);
+            while (true) {
+                //receiving new UDP packet 
+                byte[] b = new byte[maxDatagramPacketLength];
+                DatagramPacket p = new DatagramPacket(b, maxDatagramPacketLength);
                 try{
-                    packetManager.sendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                }catch( IOException ioe){
-                    System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when old packet received: " + ioe);
-                    System.exit(1);
-                }
-            }else{
-                //packets with larger sequence number 
-
-                //check dup
-                //update remote seq num if no dup && ==
-                //reply ACK 
-
-                if( ! packetManager.checkDupPacket(pkt.getByteSeqNum())){
-                    PacketWithInfo pp = new PacketWithInfo(pkt);
-                    packetManager.getQueue().add(pp);
-
-                    if(pkt.getByteSeqNum() == packetManager.getRemoteSequenceNumber()+1){
-                        int lastContinueByte = pkt.getByteSeqNum() + pkt.getDataLength();
-                        ArrayList<PacketWithInfo> pkts = new ArrayList<>();
-                        packetManager.searchContinuous( lastContinueByte, pkts);//search for continuous chunk after adding this packet, update remoteSequenceNumber
-                    } 
-
+                    udpSocket.receive(p);
+                }catch(IOException ioe ){
+                    System.err.println("In TCPRcv ByteRcvr: " + ioe);
                 }
 
-                //if larger seq number ( out-of-order packet): reply ACK without update remote seq num 
-                Packet ackPckt = makeACKPacket(packetManager);
-                try{
-                    packetManager.sendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                }catch( IOException ioe){
-                    System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
-                    System.exit(1);
+                Packet pkt = Packet.deserialize(b);
+                if (!checkValidDataPacket(pkt)) {
+                    System.out.println("Corrupted data received. Drop.");
+                    continue;
                 }
 
-
+                if(Packet.checkFIN(pkt)) {
+                    // Receive FIN. Go to closing connection state.
+                    break;
+                }
                 
-            }
-            
-            //TODO: do not need to worry about ack count and resend count? 
+                //send to pkt manager
+                if(pkt.getByteSeqNum()< packetManager.getRemoteSequenceNumber()+1 ){
+                    //duplicated packet, do not add to manager queue
+                    //reply ACK
+                    Packet ackPckt = makeACKPacket(packetManager);
+                    try{
+                        packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
+                    }catch( IOException ioe){
+                        System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when old packet received: " + ioe);
+                        System.exit(1);
+                    }
+                }else{
+                    //packets with larger sequence number 
 
+                    //check dup
+                    //update remote seq num if no dup && ==
+                    //reply ACK 
 
+                    if( ! packetManager.checkDupPacket(pkt.getByteSeqNum())){
+                        PacketWithInfo pp = new PacketWithInfo(pkt);
+                        packetManager.getQueue().add(pp);
 
+                        if(pkt.getByteSeqNum() == packetManager.getRemoteSequenceNumber()+1){
+                            int lastContinueByte = pkt.getByteSeqNum() + pkt.getDataLength() - 1;
+                            ArrayList<PacketWithInfo> pkts = new ArrayList<>();
+                            packetManager.searchContinuous( lastContinueByte, pkts);//search for continuous chunk after adding this packet, update remoteSequenceNumber
+                        } 
+
+                    }
+
+                    //if larger seq number ( out-of-order packet): reply ACK without update remote seq num 
+                    Packet ackPckt = makeACKPacket(packetManager);
+                    try{
+                        packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
+                    }catch( IOException ioe){
+                        System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
+                        System.exit(1);
+                    }
+                }
+            } // end of while(true)
+
+            // TODO: Close connection
         }
 
     }
 
-    // Thread 2: composing the data and store it in the file system
-    private class StoreFile implements Runnable {
+    /** Thread 2: get contiguous packets and put it into buffer */
+    private class PacketToBuffer implements Runnable {
+        public void run() {
+
+        }
+    }
+    
+    /** Thread 3: composing the data and store it in the file system */
+    private class BufferToFile implements Runnable {
         public void run(){
             
         }
@@ -118,12 +131,12 @@ public class TCPRcv{
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
     */
-    public static boolean checkValidDataPacket( Packet pkt, PacketManager pkm){
-        if(Packet.checkFIN( pkt) || Packet.checkSYN(pkt)) return false; 
+    public boolean checkValidDataPacket( Packet pkt){
+        if( Packet.checkSYN(pkt)) return false; // Thread 1 has to handle FIN
         if( !Packet.checkACK(pkt)) return false; 
-        if(pkt.getACK() != pkm.getLocalSequenceNumber() +1 ) return false; 
-        boolean ck = pkt.verifyChecksum();
-        return ck; 
+        // if(pkt.getACK() != this.packetManager.getLocalSequenceNumber() +1 ) return false; 
+        // TODO: ^ What does this line do? Can we accept that sender does not receive our ACK? Or do you mean that pkt.getACK() should always be 1?
+        return pkt.verifyChecksum();
     }
 
     /*
@@ -131,8 +144,9 @@ public class TCPRcv{
     */
     public static Packet makeACKPacket(PacketManager pkm){
         Packet ackPkt = new Packet(pkm.getLocalSequenceNumber());
-        ackPkt.setACK(pkm.getRemoteSequenceNumber() + 1);
-        ackPkt.setTimeStampToCurrent();
+        ackPkt.setACK(
+            pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
+        // ackPkt.setTimeStampToCurrent(); 
         Packet.setFlag(ackPkt, false, false, true);
         Packet.calculateAndSetChecksum(ackPkt);
         return ackPkt; 
@@ -149,17 +163,18 @@ public class TCPRcv{
         try{
             this.udpSocket = new DatagramSocket( listenPort); //create new socket and bind to the specified port 
             //TODO: three way handshake
-
+            // Send SYN + ACK and start thread 1
 
 
         }catch( SocketException se){
             System.out.println("In TCPRcv work(): " + se); 
         }
 
-        //thread to rcv packet and send to packet manager
-        //thread to get data from packet manager and send to app 
+        // Thread 1: to rcv packet and put into packet manager
+        // When the same thread sees the sender sent FIN, it needs to react accordingly
 
-        //reply fin and close 
+        // Thread 2: Get data from packet manager and make it a file
+
     }
 
 }

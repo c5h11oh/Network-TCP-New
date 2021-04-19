@@ -357,6 +357,9 @@ public class TCPSend {
             T2_newPacketSender.join();
             T3_ACKReceiver.join();
             T4_timeoutChecker.join();
+
+            // TODO: Close connection
+
         } catch (SocketException e) {
             System.err.println("SocketException: " + e);
             System.exit(1);
