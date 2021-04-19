@@ -3,7 +3,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import Buffer.ReceiverBuffer;
@@ -70,78 +71,86 @@ public class TCPRcv{
                     break;
                 }
                 
-                // TODO: Check if the packet's sequence number is within (remoteSequenceNumber, remoteSequenceNumber + sws(windowSize) * mtu]. The sequence number may wrap. Check if the # of packets in `continuousPackets` is less than or equal to `windowSize`.
-                // (cont.) If the sequence number is valid and `continuousPackets` has less than `windowSize` packets, put the packet into packet manager. and call update function to put continuous packets into `continuousPackets` and update `remoteSequenceNumber` accordingly; if not, do nothing. the update function should call increaseRemoteSequenceNumber() to perform wrap-aware increase.
-                // (cont.) Lastly, reply an ACK with the latest `remoteSequenceNumber`.
+                /** 
+                 * Check if the packet's sequence number is within 
+                 * (remoteSequenceNumber, remoteSequenceNumber + windowSize * mtu]. 
+                 * The sequence number may wrap. Check if the # of packets in `continuousPackets` is less than or equal to `windowSize`.
+                 * If the sequence number is valid and `continuousPackets` has less than `windowSize` packets, put the packet into packet manager. and call updateContinuousInfo() to put continuous packets into `continuousPackets` and update `remoteSequenceNumber` accordingly; if not, do nothing. 
+                 * Lastly, reply an ACK with the latest `remoteSequenceNumber`. 
+                 */
 
                 int lowerBound = packetManager.getRemoteSequenceNumber();
                 int upperBound = lowerBound + windowSize * mtu;
                 boolean overflow = false;
                 if (upperBound < 0) { /* overflow */ 
                     overflow = true;
-                    upperBound += Integer.MAX_VALUE; upperBound += 1; 
+                    upperBound += Integer.MAX_VALUE; 
+                    upperBound += 1; 
                 }
 
                 if ( (!overflow && (pkt.byteSeqNum <= lowerBound || pkt.byteSeqNum > upperBound)) ||
                      ( overflow &&  pkt.byteSeqNum <= lowerBound && pkt.byteSeqNum > upperBound )       ) {
                         // outside window packet. do nothing.
                 }
+                else if (continuousPackets.size() >= windowSize) {
+                        // although new packet is in window range, continuousPackets has no space. do nothing.
+                }
                 else {
-                        // new packet in window range. put it in packetManager. update `continuousPackets` and `remoteSequenceNumber`.
+                        // new packet is in window range. continuousPackets has space. put it in packetManager. update `continuousPackets` and `remoteSequenceNumber`.
                     PacketWithInfo pwi = new PacketWithInfo(pkt);
                     packetManager.getQueue().add(pwi);
-                    updateContinuousByteInfo();
+                    updateContinuousInfo();
                 }
 
                 // send ACK packet
-
+                Packet ackPckt = makeACKPacket(packetManager); // get `remoteSequenceNumber` from packetManager
+                try{
+                    packetManager.receiverSendUDP(ackPckt, udpSocket, senderPort, senderIp);
+                }catch( IOException ioe){
+                    System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
+                    System.exit(1);
+                }
                 
-                // //send to pkt manager
-                // if(pkt.getByteSeqNum()< packetManager.getRemoteSequenceNumber()+1 ){
-                //     //duplicated packet, do not add to manager queue
-                //     //reply ACK
-                //     Packet ackPckt = makeACKPacket(packetManager);
-                //     try{
-                //         packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                //     }catch( IOException ioe){
-                //         System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when old packet received: " + ioe);
-                //         System.exit(1);
-                //     }
-                // }else{
-                //     //packets with larger sequence number 
-
-                //     //check dup
-                //     //update remote seq num if no dup && ==
-                //     //reply ACK 
-
-                //     if( ! packetManager.checkDupPacket(pkt.getByteSeqNum())){
-                //         PacketWithInfo pp = new PacketWithInfo(pkt);
-                //         packetManager.getQueue().add(pp);
-
-                //         if(pkt.getByteSeqNum() == packetManager.getRemoteSequenceNumber()+1){
-                //             int lastContinueByte = pkt.getByteSeqNum() + pkt.getDataLength() - 1;
-                //             ArrayList<PacketWithInfo> pkts = new ArrayList<>();
-                //             packetManager.searchContinuous( lastContinueByte, pkts);//search for continuous chunk after adding this packet, update remoteSequenceNumber
-                //         } 
-
-                //     }
-
-                //     //if larger seq number ( out-of-order packet): reply ACK without update remote seq num 
-                //     Packet ackPckt = makeACKPacket(packetManager);
-                //     try{
-                //         packetManager.receiverSendUDP(ackPckt, udpSocket,  senderPort, senderIp);
-                //     }catch( IOException ioe){
-                //         System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
-                //         System.exit(1);
-                //     }
-                // }
             } // end of while(true)
 
             // TODO: After receiving FIN we reach here. Need to tell other threads in this receiving side that no more packets will come and send appropriate packets to sender to close connection.
         }
+        /**
+         * update `continuousPackets` and `remoteSequenceNumber` according to `remoteSequenceNumber`
+         */
+        private void updateContinuousInfo(){
+            LinkedList<PacketWithInfo> pwiToBePutBack = new LinkedList<PacketWithInfo>();
+            int seqNumPrevExamined = -1;
+            int seqNumLookingFor = packetManager.getRemoteSequenceNumber() + 1;
 
-        private void updateContinuousByteInfo(){
-            // TODO: Sven
+            if (seqNumLookingFor < 0) { seqNumLookingFor = 0; } // wrap
+            while( !packetManager.getQueue().isEmpty() ) {
+                PacketWithInfo pwi = packetManager.getQueue().poll();
+                if ( pwi.packet.byteSeqNum == seqNumPrevExamined ) {
+                    continue;
+                } 
+                else if ( pwi.packet.byteSeqNum > seqNumLookingFor ) {
+                    pwiToBePutBack.add(pwi);
+                    break;
+                }
+                else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
+                    continuousPackets.add(pwi.packet);
+                    packetManager.increaseRemoteSequenceNumber(pwi.packet.getDataLength()); 
+                    seqNumLookingFor = packetManager.getRemoteSequenceNumber() + 1;
+                    if (seqNumLookingFor < 0) { seqNumLookingFor = 0; } // wrap
+                }
+                else { // pwi.packet.byteSeqNum < seqNumLookingFor. 
+                        pwiToBePutBack.add(pwi);
+                }
+                seqNumPrevExamined = pwi.packet.byteSeqNum;
+            }
+
+            // put back packetsWithInfo to packetManager
+            try {
+                while (true) {
+                    packetManager.getQueue().add( pwiToBePutBack.poll() );
+                }
+            } catch (NoSuchElementException e) {}
         }
 
     }
