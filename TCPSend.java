@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.file.*;
+import java.util.NoSuchElementException;
 import java.io.*;
 
 import Packet.*;
@@ -83,7 +84,7 @@ public class TCPSend {
         } catch (SocketTimeoutException ste) {
             // retransmit if timeout (init timeout = 5
            
-            System.out.println("establish connection timeout: " + ste);
+            System.err.println("establish connection timeout: " + ste);
             return false;
         } catch (Exception e) {
             // IllegalArgumentException from connect() - if the IP address is null, or the
@@ -155,11 +156,13 @@ public class TCPSend {
         public void run() {
             try {
                 while (sendBuffer.isFileToBufferFinished() == false) {
-                    bufferToPacketAndSend();
+                    bufferToPacket();
+                    packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
                 }
 
                 while (sendBuffer.getAvailableDataSize() > 0) {
-                    bufferToPacketAndSend();
+                    bufferToPacket();
+                    packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
                 }
             
                 // All buffered data has been stored as Packet in PacketManager. Set flag.
@@ -170,7 +173,7 @@ public class TCPSend {
             }
         }
 
-        private void bufferToPacketAndSend() throws Exception {
+        private void bufferToPacket() throws Exception {
             int seqNum = packetManager.getLocalSequenceNumber(); // use packet manager's local sequence number instead of buffer's index, since our buffer is unlikely to be INT_MAX in size.
             byte[] data = sendBuffer.getDataToSend(mtu); // sendBuffer.lastByteSent updated
             // make packet with the data
@@ -178,16 +181,13 @@ public class TCPSend {
             
             // insert Pkt to packet manager
             PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt);
+            infoPkt.timeOut = timeOut.getTimeout();
             packetManager.getQueue().add(infoPkt);
             
             // increment local sequence number
             if (data != null) {
                 packetManager.incrementLocalSequenceNumber(data.length);
             }
-
-            // make udpPkt and send
-            DatagramPacket udpPkt = toUDP(tcpPkt, remoteIp, remotePort);
-            udpSocket.send(udpPkt);
         }
 
         private Packet makeDataPacket(int seqNum, byte[] data) {
@@ -245,7 +245,14 @@ public class TCPSend {
                         else if (ACKnum > lastACKnum) { // May be a new ACK or a dup ACK, ACK number is not wrapped
                             for(PacketWithInfo p : packetManager.getQueue()){
                                 if (p.packet.byteSeqNum < ACKnum){
+                                    // If seqNum+length==ACKnum -> update RTT, timeout
+                                    int ACKnumMatch = p.packet.byteSeqNum + p.packet.getDataLength();
+                                    if (ACKnumMatch < 0) { ACKnumMatch += Integer.MAX_VALUE; ACKnumMatch += 1; } // wrap
+                                    if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
+
+                                    // remove received packets from queue
                                     assert packetManager.getQueue().remove(p) == true;
+                                    packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
                                     if((++p.ACKcount) == 4) {
@@ -258,6 +265,7 @@ public class TCPSend {
                             for(PacketWithInfo p : packetManager.getQueue()){
                                 if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
                                     assert packetManager.getQueue().remove(p) == true;
+                                    packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
                                     if((++p.ACKcount) == 4) {
@@ -279,11 +287,13 @@ public class TCPSend {
         private void dupACKResend(PacketWithInfo p) throws IOException {
             // Make resend packet with info
             PacketWithInfo resndPWI = p.getResendPacketWithInfo(packetManager.getRemoteSequenceNumber());
-            // Resend packet
-            udpSocket.send(toUDP(resndPWI.packet, remoteIp, remotePort));
+
             // Update PacketManager (remove old, add new)
             assert packetManager.getQueue().remove(p) == true;
             packetManager.getQueue().add(resndPWI);
+
+            // Resend packet
+            packetManager.dupACKFastRetransmit(resndPWI, udpSocket, remotePort, remoteIp);
         }
     }
 
@@ -296,6 +306,10 @@ public class TCPSend {
             }
             catch (IOException e){
                 System.err.println("T4-timeoutChecker: IOException:");
+                System.err.println(e);
+            }
+            catch (NoSuchElementException e){
+                System.err.println("T4-timeoutChecker: NoSuchElementException:");
                 System.err.println(e);
             }
             return; 

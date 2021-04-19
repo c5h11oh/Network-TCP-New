@@ -10,9 +10,11 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 
 import Statistics.*;
+import Exceptions.*;
 
 public class PacketManager {
-    private final int windowsSize; //in number of segments
+    private final int windowSize; //in number of segments
+    private int inTransitPacket;
     private PriorityBlockingQueue<PacketWithInfo> queue;
     private Statistics statistics;
     /** 
@@ -29,11 +31,13 @@ public class PacketManager {
     
 
     public PacketManager( int windowSize, Comparator<PacketWithInfo> cmp){
-        this.windowsSize = windowSize;
-        this.remoteSequenceNumber = this.localSequenceNumber = 0;
+        this.windowSize = windowSize;
+        remoteSequenceNumber = 0;
+        localSequenceNumber = 0;
         statistics = new Statistics();
-        this.allPacketsEnqueued = false;
+        allPacketsEnqueued = false;
         queue = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
+        inTransitPacket = 0;
     }
 
     /*********************************************************************/
@@ -97,10 +101,88 @@ public class PacketManager {
     /*********************************************************************/
 
     /**
+     * To maintain appropriate sliding window, all sender threads (except three-way handshake and teardown) should send data via this method. 
+     * this: If the data is new (not retransmit), increments `inTransitPacket` after sending the packet.
+     * pwi: This method sets boolean `sent` to true after sending the packet.
+     * pwi.packet: This method updates timestamp, ACK, and set appropriate flag, and then recalculate checksum.
+     * 
+     * How to call this method: thread 2 (new data) should use trySendNewData() to invoke this function, thread 3 (triple duplicate ACK) should use dupACKFastRetransmit(), and thread 4 (timeout) should use helperCheckExpire().
+     * @param isNewData if the packet is new data, or a retransmit one
+     * @param pwi PacketWithInfo
+     * @param udpSocket
+     * @param remotePort
+     * @param remoteIp
+     * @throws IOException
+     */
+    private synchronized void senderSendUDP( boolean isNewData, PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, ExceedWindowSizeException {
+        // need to check if we will exceed window size if this is new data packet
+        if((isNewData == true) && (inTransitPacket == windowSize)) {
+            throw new ExceedWindowSizeException();
+        }
+        
+        pwi.packet.setTimeStampToCurrent();
+        Packet.setFlag(pwi.packet, false, false, true);
+        pwi.packet.setACK(this.getRemoteSequenceNumber() +1 );
+        Packet.calculateAndSetChecksum(pwi.packet);
+
+        byte[] data = Packet.serialize(pwi.packet);
+        DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
+        udpSocket.send(udpPkt);
+        
+        pwi.sent = true;
+        if (isNewData == true) {
+            ++inTransitPacket;
+        }
+        assert inTransitPacket <= windowSize;
+
+        notifyAll();
+    }
+    
+    public synchronized void trySendNewData(DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+        int vacancy = windowSize - inTransitPacket;
+        assert vacancy >= 0;
+        if (vacancy == 0) return;
+
+        for(PacketWithInfo p : this.queue) {
+            if((p.sent == false) && (vacancy > 0)) {
+                try {
+                    senderSendUDP(true, p, udpSocket, remotePort, remoteIp);
+                }catch (ExceedWindowSizeException e) {
+                    System.err.println("PacketManager: trySendNewData: abnormal: " + e);
+                    System.exit(1);
+                }
+                --vacancy;
+            }
+            else if (vacancy == 0) break;
+        }
+    }
+
+    /**
+     * Sender T3: Call this function if it needs to retransmit packet because of duplicate ACKs.
+     * @throws IOException
+     */
+    public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+        try {
+            senderSendUDP(false, pwi, udpSocket, remotePort, remoteIp);
+        }catch (ExceedWindowSizeException e) {
+            System.err.println("PacketManager: dupACKFastRetransmit: abnormal: " + e);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Sender T3: Call this function whenever we remove one PacketWithInfo from PacketManager.queue
+     */
+    public synchronized void decrementInTransitPacket() {
+        inTransitPacket -= 1;
+        assert inTransitPacket >= 0;
+    }
+    
+    /**
     Sender T4: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
-    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
                 //if unexpired pkt found 
@@ -118,27 +200,20 @@ public class PacketManager {
 
             //check packets and retransmit until find unexpired packets 
             //wait one timeout unit if unexpired found 
-            try {
-                helperCheckExpire(udpSocket, remotePort, remoteIp);
-            }
-            catch (NoSuchElementException e) {
-                System.err.println("PacketManager.checkExpire: queue is empty! Message: " + e);
-            }
+            helperCheckExpire(udpSocket, remotePort, remoteIp);
         }
         
         // no more new packet will be put in queue. Deal with remaining packets in queue.
         while( !this.queue.isEmpty()){
-            try {
-                helperCheckExpire(udpSocket, remotePort, remoteIp);
-            }
-            catch (NoSuchElementException e) {
-                System.err.println("PacketManager.checkExpire: queue is empty! Message: " + e);
-            }
+            helperCheckExpire(udpSocket, remotePort, remoteIp);
         }
         return ; 
 
     }
 
+    /**
+     * Sender T4: Checking timeout. Only called by checkExpire()
+     */
     private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException {
 
         PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
@@ -154,8 +229,13 @@ public class PacketManager {
             queue.add(head2); 
             
             // send UDP
-            sendUDP( head2.packet, udpSocket, remotePort, remoteIp); // May throw IOException
-            
+            try {
+                senderSendUDP(false, head2, udpSocket, remotePort, remoteIp); // May throw IOException
+            } catch (ExceedWindowSizeException e) {
+                System.err.println("PacketManager: helperCheckExpire: abnormal: " + e);
+                System.exit(1);
+            }
+
         }else{
             // the current packet not timeout 
             notifyAll();
@@ -220,19 +300,14 @@ public class PacketManager {
             remoteSequenceNumber=lastContinueByte;
                 queue.addAll(pkts);
             return true ;
-
-
         }
-
     }
 
-    public void sendUDP( Packet pkt, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException{
+    public void receiverSendUDP( Packet pkt, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException{
 
         byte[] data = Packet.serialize(pkt);
         DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
-        udpSocket.send(udpPkt); 
-
-
-
+        udpSocket.send(udpPkt);
     }
+
 }
