@@ -1,3 +1,5 @@
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -8,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import Buffer.ReceiverBuffer;
+import Exceptions.BufferInsufficientSpaceException;
 import Exceptions.BufferSizeException;
 import Packet.*;
 import Statistics.Statistics;
@@ -25,12 +28,18 @@ public class TCPRcv{
     int mtu;
     int windowSize; 
     String filename; 
+    FileOutputStream fileOstream;
     final int maxDatagramPacketLength = 1518; // in byte
     //remote Ip and port 
     InetAddress senderIp; 
     int senderPort; 
     Statistics statistics;
+    boolean noMoreNewPacket = false;
+    boolean noMoreNewByte   = false;
 
+    /****************************************************************************/
+    /******************               Constructor              ******************/
+    /****************************************************************************/
     public TCPRcv(int listenPort, int mtu, int windowSize, String filename) throws BufferSizeException{
         this.listenPort = listenPort;
         this.mtu = mtu;
@@ -40,12 +49,15 @@ public class TCPRcv{
         rcvBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
         continuousPackets = new LinkedBlockingQueue<Packet>();
         packetManager = new PacketManager(windowSize, new RcvPacketComparator());
-        // Note: See PacketManager.java to get localSequenceNumber and remoteSequenceNumber's definition.
+        // Note: See PacketManager.java to get localSequenceNumber and remoteSequenceNumber's definition for detailed explanation.
         // packetManager's remoteSequenceNumber stores the last continuous byte received from the sender
         // its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)
         
     }
 
+    /*********************************************************************/
+    /******************** Runnable objects (Threads) *********************/
+    /*********************************************************************/
     //Thread 1: receive byte, checksum, store to pkt manager and call pkt manager's function to reply ACK
     private class ByteRcvr implements Runnable{
 
@@ -113,6 +125,11 @@ public class TCPRcv{
                 
             } // end of while(true)
 
+            synchronized (continuousPackets) {   
+                // No more packets. Notify thread 2 in case it is waiting for new packet arriving.
+                noMoreNewPacket = true;
+                continuousPackets.notifyAll();
+            }
             // TODO: After receiving FIN we reach here. Need to tell other threads in this receiving side that no more packets will come and send appropriate packets to sender to close connection.
         }
         /**
@@ -135,12 +152,13 @@ public class TCPRcv{
                 }
                 else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
                     continuousPackets.add(pwi.packet);
+                    continuousPackets.notifyAll();
                     packetManager.increaseRemoteSequenceNumber(pwi.packet.getDataLength()); 
                     seqNumLookingFor = packetManager.getRemoteSequenceNumber() + 1;
                     if (seqNumLookingFor < 0) { seqNumLookingFor = 0; } // wrap
                 }
                 else { // pwi.packet.byteSeqNum < seqNumLookingFor. 
-                        pwiToBePutBack.add(pwi);
+                    pwiToBePutBack.add(pwi);
                 }
                 seqNumPrevExamined = pwi.packet.byteSeqNum;
             }
@@ -158,22 +176,163 @@ public class TCPRcv{
     /** Thread 2: get continuous packets and put it into buffer */
     private class PacketToBuffer implements Runnable {
         public void run() {
+            while ( !noMoreNewPacket ) {
+                // Try to get packet from `continuousPackets`. If it is empty, wait.
+                // continuousPackets itself is thread safe. We use synchronized to ensure `noMoreNewPacket`'s thread-safe attribute.
+                synchronized(continuousPackets) {
+                    while (continuousPackets.isEmpty()){
+                        if (noMoreNewPacket) break;
+                        try {
+                            // continuousPackets.notifyAll(); // continuousPackets is a lock shared by thread 1 and thread 2. Thread 1 never sleeps. only thread 2 wait() on rcvBuffer, and thread 1 wakes it up.
+                            continuousPackets.wait();
+                        } catch (InterruptedException e) {}
+                    }
+                    if (noMoreNewPacket) break; // breaking outer while loop. go down.
+                } // Automalically release continuousPacket lock here. See https://stackoverflow.com/questions/44327173/synchronized-statements-with-break
 
+                // continuousPackets must be non-empty to reach here. 
+                // Get continuous packets as many as possible and make them a byte array
+                int bufFreeSize = rcvBuffer.checkFreeSpace(); // free space may increase after this call. Later if we want to wait(), we need to recheck free space beforehand to avoid t2 and t3 waiting for each other.
+                int remainSize = bufFreeSize;
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                try {
+                    while (continuousPackets.element().getDataLength() <= remainSize ) {
+                        byte[] data = continuousPackets.remove().getData();
+                        bytes.writeBytes(data);
+                        remainSize -= data.length;
+                    }
+                } catch (NoSuchElementException e) {}
+                
+                // try to put bytes to rcvBuffer
+                synchronized (rcvBuffer) {
+                    
+                    // if there is no space to put even one packet size data, `bytes` will be zero in size. wait thread 3 to notify
+                    if (bytes.size() == 0) {
+                        // now we hold the lock. recheck if free space is the same before going to wait().
+                        if (bufFreeSize != rcvBuffer.checkFreeSpace()) {
+                            // free space has changed. start from top
+                            continue;
+                        }
+                        try {
+                            rcvBuffer.notifyAll(); 
+                            rcvBuffer.wait();
+                        } catch (InterruptedException e) {
+                            continue; // start from top
+                        }
+                    }
+                
+                    // there is space in rcvBuffer to put data
+                    else {
+                        try {
+                            rcvBuffer.put(bytes.toByteArray());
+                        } catch (BufferInsufficientSpaceException e) {
+                            // Shouldn't be here. We've checked free space.
+                            System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
+                            System.exit(1);
+                        }
+                        rcvBuffer.notifyAll();
+                    }
+                } // release rcvBuffer lock
+            }
+
+            // no more new incoming packets. move all packets to rcvBuffer bytes
+            while ( !continuousPackets.isEmpty() ) {
+                int bufFreeSize = rcvBuffer.checkFreeSpace();
+                int remainSize = bufFreeSize;
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                try {
+                    while (continuousPackets.element().getDataLength() <= remainSize ) {
+                        byte[] data = continuousPackets.remove().getData();
+                        bytes.writeBytes(data);
+                        remainSize -= data.length;
+                    }
+                } catch (NoSuchElementException e) {}
+
+                synchronized (rcvBuffer) {
+                    if (bytes.size() == 0) {
+                        if (bufFreeSize != rcvBuffer.checkFreeSpace()) {
+                            continue;
+                        }
+                        try {
+                            rcvBuffer.notifyAll();
+                            rcvBuffer.wait();
+                        } catch (InterruptedException e) {
+                            continue; // start from top
+                        }
+                    }
+                    else {
+                        try {
+                            rcvBuffer.put(bytes.toByteArray());
+                        } catch (BufferInsufficientSpaceException e) {
+                            System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
+                            System.exit(1);
+                        }
+                        rcvBuffer.notifyAll();
+                    }
+                } // release rcvBuffer lock
+            }
+
+            // all data are in rcvBuffer. tell thread 3 this good news in case it is waiting
+            synchronized(rcvBuffer){
+                noMoreNewByte = true;
+                rcvBuffer.notifyAll();
+            }
         }
     }
     
-    /** Thread 3: composing the data and store it in the file system */
+    /** Thread 3: retrieve data from rcvBuffer and store it to the file system */
     private class BufferToFile implements Runnable {
         public void run(){
-            
+            // Note that it is because we only have one putter (thread 2) and one getter (thread 3) so that we can use a single lock (rcvBuffer) to control.
+            synchronized(rcvBuffer) {
+                while ( !noMoreNewByte ) {
+                    byte[] b = rcvBuffer.getData();
+                    
+                    // if there is no data, wait(). when wake up, go back to start of while loop.
+                    if (b == null) {
+                        rcvBuffer.notifyAll();
+                        try{
+                            rcvBuffer.wait();
+                        } catch (InterruptedException e) {
+                            // should have been called by thread 2's notifyAll() because some bytes has been put or noMoreNewByte == true
+                            continue;
+                        }
+                    }
+
+                    // there is data. write all data into the file
+                    try {
+                        fileOstream.write(b);
+                    } catch (IOException e) {
+                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                        System.exit(1);
+                    }
+
+                    // notify thread 2 that rcvBuffer is now empty
+                    rcvBuffer.notifyAll();
+                }
+
+                // The buffer may contain last piece of data (or not)
+                byte[] b = rcvBuffer.getData();
+                if( b != null ) {
+                    try {
+                        fileOstream.write(b);
+                    } catch (IOException e) {
+                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                        System.exit(1);
+                    }
+                }
+            }
         }
     }
 
+    /****************************************************************************/
+    /******************            Helper functions            ******************/
+    /****************************************************************************/
     /*
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
     */
-    public boolean checkValidDataPacket( Packet pkt){
+    private boolean checkValidDataPacket( Packet pkt){
         if( Packet.checkSYN(pkt)) return false; // Thread 1 has to handle FIN
         if( !Packet.checkACK(pkt)) return false; 
         // if(pkt.getACK() != this.packetManager.getLocalSequenceNumber() +1 ) return false; 
@@ -184,7 +343,7 @@ public class TCPRcv{
     /*
     This function return an ACK packet with the current 'Next Byte Expected' in the ackowledge field 
     */
-    public static Packet makeACKPacket(PacketManager pkm){
+    private static Packet makeACKPacket(PacketManager pkm){
         Packet ackPkt = new Packet(pkm.getLocalSequenceNumber());
         ackPkt.setACK(
             pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
@@ -194,29 +353,48 @@ public class TCPRcv{
         return ackPkt; 
     }
 
-   
-
-    
-
-   
-
-    public void work() {
+    /****************************************************************************/
+    /******************          main work and statistics      ******************/
+    /****************************************************************************/
+    public void work() throws InterruptedException, IOException {
         
-        try{
+        try {
+            fileOstream = new FileOutputStream(filename);
             this.udpSocket = new DatagramSocket( listenPort); //create new socket and bind to the specified port 
             //TODO: three way handshake
             // Send SYN + ACK and start thread 1
 
+            // Thread 1: to rcv packet and put into packet manager. handle FIN and close connection
+            Thread T1_storePacketAndACK = new Thread(new ByteRcvr());
+            // Thread 2: Get data from packet manager and put them to rcvBuffer
+            Thread T2_packetToBuffer = new Thread(new PacketToBuffer());
+            // Thread 3: retrieve data from rcvBuffer and store it to the file system
+            Thread T3_bufferToFile = new Thread(new BufferToFile());
 
-        }catch( SocketException se){
-            System.out.println("In TCPRcv work(): " + se); 
+            T1_storePacketAndACK.start();
+            T2_packetToBuffer.start();
+            T3_bufferToFile.start();
+
+            T1_storePacketAndACK.join();
+            T2_packetToBuffer.join();
+            T3_bufferToFile.join();
+            fileOstream.close();
+
         }
-
-        // Thread 1: to rcv packet and put into packet manager
-        // When the same thread sees the sender sent FIN, it needs to react accordingly
-
-        // Thread 2: Get data from packet manager and make it a file
-
+        catch (java.io.FileNotFoundException e) {
+            System.err.println("TCPRcv: work(): the file \"" + filename + "\" exists but is a directory rather than a regular file, does not exist but cannot be created, or cannot be opened for any other reason. Abort.");
+            System.exit(1);
+        }
+        catch( SocketException se){
+            System.err.println("TCPRcv: work(): SocketException: " + se); 
+            System.exit(1);
+        }
     }
 
+    // Get statistics
+    public String getStatisticsString() {
+        // TODO: Statistics
+        Statistics statistics = this.packetManager.getStatistics();
+        return "Statistics not ready!";
+    }
 }

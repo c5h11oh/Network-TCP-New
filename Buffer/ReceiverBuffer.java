@@ -11,8 +11,8 @@ public class ReceiverBuffer extends Buffer {
     private int nextByteExpected;
     // private int lastByteRcvd;
 
-    /* Indicators of thread `DataReceiver` has retrieved all data and put in buffer */
-    private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
+    /* obsolete */
+    // private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
     
     public ReceiverBuffer(int bufferSize, int mtu, int windowSize) throws BufferSizeException {
         super(++bufferSize, mtu, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
@@ -30,13 +30,9 @@ public class ReceiverBuffer extends Buffer {
         return this.nextByteExpected;
     }
 
-    // public int getLastByteRcvd(){
-    //     return this.lastByteRcvd;
+    // public boolean isAllDataReceived(){
+    //     return allDataReceived;
     // }
-
-    public boolean isAllDataReceived(){
-        return allDataReceived;
-    }
 
     public int checkFreeSpace(){ // `lastByteRead` is NOT free
         if (nextByteExpected == lastByteRead){ 
@@ -54,7 +50,7 @@ public class ReceiverBuffer extends Buffer {
      * stored in and managed by PacketManager as packets. Therefore, ReceiverBuffer does not 
      * need to maintain lastByteRcvd.
      */
-    public void put(byte[] data) throws BufferInsufficientSpaceException{
+    public synchronized void put(byte[] data) throws BufferInsufficientSpaceException{
         if (data.length == 0) return;
         
         if (checkFreeSpace() < data.length) throw new BufferInsufficientSpaceException();
@@ -75,18 +71,18 @@ public class ReceiverBuffer extends Buffer {
         this.notifyAll();
     }
 
-    public void put(byte[] data, boolean finish) 
-                 throws BufferInsufficientSpaceException{
-        put(data);
-        if(finish){
-            this.allDataReceived = true;
-        }
-    }
+    // public synchronized void put(byte[] data, boolean finish) 
+    //              throws BufferInsufficientSpaceException{
+    //     put(data);
+    //     if(finish){
+    //         this.allDataReceived = true;
+    //     }
+    // }
 
     /*
      * Get as much data as possible.
      */
-    public byte[] getData() throws InvalidPointerException {
+    public synchronized byte[] getData() {
         int lastContinuousByte = (nextByteExpected == 0) ? (bufferSize - 1) : (nextByteExpected - 1);
         if (lastByteRead == lastContinuousByte) { 
             // No more data

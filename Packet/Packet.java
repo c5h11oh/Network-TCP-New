@@ -175,5 +175,9 @@ public class Packet {
         return this.data.length;
     }
 
+    public byte[] getData() {
+        return this.data;
+    }
+
     
 }

@@ -5,7 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 
@@ -281,41 +280,41 @@ public class PacketManager {
     This function check if the packet manager contains packets with continous chunk of data after receiving a new packet 
     should always return true: finish checking packets 
     */
-    public synchronized boolean searchContinuous( int lastContinueByte, ArrayList<PacketWithInfo> pkts){
+    // public synchronized boolean searchContinuous( int lastContinueByte, ArrayList<PacketWithInfo> pkts){
         
-        if(this.getQueue().size() == 0 ){ //if all packts have been checked
-            remoteSequenceNumber=lastContinueByte;
-            queue.addAll(pkts);
-            return true ; 
-        }
+    //     if(this.getQueue().size() == 0 ){ //if all packts have been checked
+    //         remoteSequenceNumber=lastContinueByte;
+    //         queue.addAll(pkts);
+    //         return true ; 
+    //     }
 
-        PacketWithInfo head = this.getQueue().poll(); // remove the packet with smallest seq number and add to pkts
-        while( head.packet.getByteSeqNum() < lastContinueByte+1){
-            pkts.add(head); 
-            if(queue.size() == 0 ){
-                remoteSequenceNumber=lastContinueByte;
-                queue.addAll(pkts);
-                return true ; 
+    //     PacketWithInfo head = this.getQueue().poll(); // remove the packet with smallest seq number and add to pkts
+    //     while( head.packet.getByteSeqNum() < lastContinueByte+1){
+    //         pkts.add(head); 
+    //         if(queue.size() == 0 ){
+    //             remoteSequenceNumber=lastContinueByte;
+    //             queue.addAll(pkts);
+    //             return true ; 
     
-            } else{
-                head = queue.poll();
-            }
-        }
+    //         } else{
+    //             head = queue.poll();
+    //         }
+    //     }
 
-        if( head.packet.getByteSeqNum() == lastContinueByte+1){ 
-            //if current seq number == next byte expect --> find continuous chunck
-            // update lastContinueByte and recursively search 
-            lastContinueByte = head.packet.getByteSeqNum()+ head.packet.getDataLength();
-            pkts.add(head);
-            return searchContinuous(lastContinueByte, pkts);
-        }else{
-            //if current seq number larger than next expected --> still not continuous --> return 
-            pkts.add(head);
-            remoteSequenceNumber=lastContinueByte;
-                queue.addAll(pkts);
-            return true ;
-        }
-    }
+    //     if( head.packet.getByteSeqNum() == lastContinueByte+1){ 
+    //         //if current seq number == next byte expect --> find continuous chunck
+    //         // update lastContinueByte and recursively search 
+    //         lastContinueByte = head.packet.getByteSeqNum()+ head.packet.getDataLength();
+    //         pkts.add(head);
+    //         return searchContinuous(lastContinueByte, pkts);
+    //     }else{
+    //         //if current seq number larger than next expected --> still not continuous --> return 
+    //         pkts.add(head);
+    //         remoteSequenceNumber=lastContinueByte;
+    //             queue.addAll(pkts);
+    //         return true ;
+    //     }
+    // }
 
     public void receiverSendUDP( Packet pkt, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException{
 
