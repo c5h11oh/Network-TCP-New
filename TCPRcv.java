@@ -125,12 +125,13 @@ public class TCPRcv{
                 
             } // end of while(true)
 
+            // tell other threads in receiving side that no more packets will come
             synchronized (continuousPackets) {   
                 // No more packets. Notify thread 2 in case it is waiting for new packet arriving.
                 noMoreNewPacket = true;
                 continuousPackets.notifyAll();
             }
-            // TODO: After receiving FIN we reach here. Need to tell other threads in this receiving side that no more packets will come and send appropriate packets to sender to close connection.
+            // TODO: After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
         }
         /**
          * update `continuousPackets` and `remoteSequenceNumber` according to `remoteSequenceNumber`
@@ -139,31 +140,39 @@ public class TCPRcv{
             LinkedList<PacketWithInfo> pwiToBePutBack = new LinkedList<PacketWithInfo>();
             int seqNumPrevExamined = -1;
             int seqNumLookingFor = packetManager.getRemoteSequenceNumber() + 1;
-
             if (seqNumLookingFor < 0) { seqNumLookingFor = 0; } // wrap
+
             while( !packetManager.getQueue().isEmpty() ) {
                 PacketWithInfo pwi = packetManager.getQueue().poll();
+                
                 if ( pwi.packet.byteSeqNum == seqNumPrevExamined ) {
+                    // do nothing == throw this duplicate PacketWithInfo
                     continue;
                 } 
                 else if ( pwi.packet.byteSeqNum > seqNumLookingFor ) {
+                    // put back this discontinued PacketWithInfo in the front
                     pwiToBePutBack.add(pwi);
                     break;
                 }
                 else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
+                    // the next continuous PacketWithInfo. put it in continuousPackets' tail
                     continuousPackets.add(pwi.packet);
                     continuousPackets.notifyAll();
+
+                    // update the remote sequence number, the seq number we're looking for in the next iteration
                     packetManager.increaseRemoteSequenceNumber(pwi.packet.getDataLength()); 
                     seqNumLookingFor = packetManager.getRemoteSequenceNumber() + 1;
                     if (seqNumLookingFor < 0) { seqNumLookingFor = 0; } // wrap
                 }
                 else { // pwi.packet.byteSeqNum < seqNumLookingFor. 
+                    // may be wrapped PacketWithInfo in our front. put back.
                     pwiToBePutBack.add(pwi);
                 }
+                // save current packet's sequence number for checking dup packets in the next iteration
                 seqNumPrevExamined = pwi.packet.byteSeqNum;
             }
 
-            // put back packetsWithInfo to packetManager
+            // put back PacketWithInfo in pwiToBePutBack to packetManager
             try {
                 while (true) {
                     packetManager.getQueue().add( pwiToBePutBack.poll() );
@@ -264,6 +273,7 @@ public class TCPRcv{
                         try {
                             rcvBuffer.put(bytes.toByteArray());
                         } catch (BufferInsufficientSpaceException e) {
+                            // Shouldn't be here. We've checked free space.
                             System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
                             System.exit(1);
                         }
