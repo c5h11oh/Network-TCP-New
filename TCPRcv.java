@@ -29,7 +29,7 @@ public class TCPRcv{
     int windowSize; 
     String filename; 
     FileOutputStream fileOstream;
-    final int maxDatagramPacketLength = 1518; // in byte
+    final static int maxDatagramPacketLength = 1518; // in byte
     //remote Ip and port 
     InetAddress senderIp; 
     int senderPort; 
@@ -54,6 +54,63 @@ public class TCPRcv{
         // its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)
         
     }
+
+    /****************************************************************************/
+    /******************               Connection              ******************/
+    /****************************************************************************/
+
+    /*
+    This function tries to receive SYN from a sender and do the receiver part of the 3 way handshake procedure 
+    Will update the senderIp and senderPort field for this connectoin 
+    @Return true if successfully establish connection, false otherwise 
+    */
+    public boolean passiveConnect(){
+    
+        byte[] b = new byte[ maxDatagramPacketLength];
+        DatagramPacket synUDP = new DatagramPacket(b, maxDatagramPacketLength);
+
+        try{
+            //try to receive SYN 
+            udpSocket.receive(synUDP); 
+            
+            //check flag and checksum 
+            Packet synPkt = Packet.deserialize(b);
+            if(!synPkt.checkSYN || synPkt.checkACk || synPkt.checkFIN){ return false;}
+            if(! synPkt.verifyChecksum()){ return false;}
+
+            //if valid syn, set remote sequence number as received (should be 0) 
+            packetManager.setRemoteSequenceNumber(synPkt.getByteSeqNum());
+            this.senderIp = synUDP.getAddress();
+            this.senderPort = synUDP.getPort();
+
+            //reply with SYN and ACK and incr loacl sequence number by 1 
+            Packet sap = makeSAPacket(packetManager); 
+            packetManager.receiverSendUDP(sap, udpSocket,  senderPort, senderIp);
+            packetManager.increaseLocalSequenceNumber(1);
+
+            //receive ACK 
+            b = new byte[maxDatagramPacketLength];
+            DatagramPacket a = new DatagramPacket( b, maxDatagramPacketLength);
+            udpSocket.receive(a);
+            Packet aPkt = Packet.deserialize(b);
+            if(!aPkt.checkACK){ return false;}
+            if(aPkt.checkSYN || aPkt.checkFIN) { return false;}
+            if(! synPkt.verifyChecksum()){ return false;}
+            if(aPkt.getACK != packetManager.getLocalSequenceNumber){return false;}
+
+
+        
+        }catch(IOException ioe){
+            System.err.println("Receiver fails to establish connection: " + ioe);
+            return false;
+        }
+
+        return true;
+    
+    }
+
+
+
 
     /*********************************************************************/
     /******************** Runnable objects (Threads) *********************/
@@ -357,10 +414,26 @@ public class TCPRcv{
         Packet ackPkt = new Packet(pkm.getLocalSequenceNumber());
         ackPkt.setACK(
             pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
+            //TODO: if got MAX_VALUE, set to 0? 
         // ackPkt.setTimeStampToCurrent(); 
         Packet.setFlag(ackPkt, false, false, true);
         Packet.calculateAndSetChecksum(ackPkt);
         return ackPkt; 
+    }
+
+    /*
+    This function return an SYN+ACK packet with the current 'Next Byte Expected' in the ackowledge field 
+    NBE should be 1 
+    */
+    private static Packet makeSAPacket(PacketManager pkm){
+        Packet sap = new Packet(pkm.getLocalSequenceNumber());
+        sap.setACK(
+            pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
+            //TODO:same with above 
+        Packet.setFlag(sap, true, false ,true );
+        Packet.calculateAndSetChecksum(sap); 
+        return sap; 
+
     }
 
     /****************************************************************************/
@@ -370,8 +443,13 @@ public class TCPRcv{
         
         try {
             fileOstream = new FileOutputStream(filename);
-            this.udpSocket = new DatagramSocket( listenPort); //create new socket and bind to the specified port 
-            //TODO: three way handshake
+            this.udpSocket = new DatagramSocket( listenPort); //create new socket and bind to the specified port
+            while( ! passiveConnect() ) {
+                // use a while loop to check true, if false, set remote sequence number to 0
+                //passiveConnect ++ remote seq num, but if connect not successful, the value should not be changed
+                packetManager.setRemoteSequenceNumber(0);
+            }
+            
             // Send SYN + ACK and start thread 1
 
             // Thread 1: to rcv packet and put into packet manager. handle FIN and close connection
