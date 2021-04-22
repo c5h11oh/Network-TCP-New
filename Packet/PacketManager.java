@@ -151,10 +151,16 @@ public class PacketManager {
         notifyAll();
     }
     
-    public synchronized void trySendNewData(DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+    /*
+    This function try to send a new Data packet and return the TCP pkt (Packet) sent successfully 
+    Return null if not send  
+    */
+    public synchronized Packet trySendNewData(DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
         int vacancy = windowSize - inTransitPacket;
+        Packet lastSent = null; 
+        
         assert vacancy >= 0;
-        if (vacancy == 0) return;
+        if (vacancy == 0) return lastSent;
 
         for(PacketWithInfo p : this.queue) {
             if((p.sent == false) && (vacancy > 0)) {
@@ -164,10 +170,12 @@ public class PacketManager {
                     System.err.println("PacketManager: trySendNewData: abnormal: " + e);
                     System.exit(1);
                 }
+                lastSent = p.packet; 
                 --vacancy;
             }
             else if (vacancy == 0) break;
         }
+        return lastSent; 
     }
 
     /**

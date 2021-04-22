@@ -25,6 +25,7 @@ public class TCPSend {
     final int localPort;
     final InetAddress remoteIp;
     final int remotePort;
+    int lastACKExpected = -1; //use to indicate the start of connection closing 
 
     /*********************************************************************/
     /********************** Connections and Packets **********************/
@@ -124,6 +125,8 @@ public class TCPSend {
                     sendBuffer.put(data);
                 }
                 sendBuffer.setFileToBufferFinished();
+                fileEndByte = sendBuffer.getLastByteWritten();
+
                 bin.close();
             } catch (NullPointerException e) {
                 System.err.println("TCPSend: NullPointerException: " + e);
@@ -155,18 +158,22 @@ public class TCPSend {
 
         public void run() {
             try {
+                Packet lastPkt; 
+
                 while (sendBuffer.isFileToBufferFinished() == false) {
                     bufferToPacket();
-                    packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
+                    lastPkt = packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
                 }
 
                 while (sendBuffer.getAvailableDataSize() > 0) {
                     bufferToPacket();
-                    packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
+                    lastPkt = packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
                 }
             
                 // All buffered data has been stored as Packet in PacketManager. Set flag.
                 packetManager.setAllPacketsEnqueued();
+                lastACKExpected = lastPkt.getByteSeqNum() + lastPkt.getDataLength() +1 ;
+                //when all data are sent, we can send FIN when the lastACKExpected received 
 
             } catch (Exception e) {
                 System.out.println(e);
@@ -224,6 +231,8 @@ public class TCPSend {
                         udpSocket.receive(ACKpktSerial);
                         Packet ACKpkt = Packet.deserialize(ACKpktSerial.getData());
                         int ACKnum = ACKpkt.ACK;
+                       
+
                         if (ACKnum == lastACKnum){ // must be a duplicate ACK
                             PacketWithInfo pp = null;
                             for (PacketWithInfo p : packetManager.getQueue()) {
@@ -278,6 +287,10 @@ public class TCPSend {
                         lastACKnum = ACKnum;
                     }
                 }
+
+                //TODO:ACKnum should be lastACKExpected 
+
+                //TODO: call connection close function 
             } catch (Exception e) {
                 System.err.println("T3-ACK_Receiver: An error occured:");
                 System.err.println(e);
