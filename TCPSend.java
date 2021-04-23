@@ -96,6 +96,59 @@ public class TCPSend {
         return false;
     }
 
+    /*
+    This function signifies the receiver to close the connection and waits for response 
+    */
+    public boolean activeClose(){
+        //send FIN
+        Packet f = new Packet(packetManager.getLocalSequenceNumber());
+        Packet.setFlag(f, false, true, false);
+        f.setACK( packetManager.getRemoteSequenceNumber() + 1);
+        Packet.calculateAndSetChecksum(f);
+
+        try{
+        DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
+        udpSocket.send(udpFin);
+        // wait to receive ACK
+        udpSocket.setSoTimeout( timeOut.getTimeout());
+        byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
+        DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
+        udpSocket.receive(dgR);
+        
+        //check valid ACK: ACK value, checksum, flag 
+        Packet ackPkt = Packet.deserialize(r);
+        if( !ackPkt.verifyChecksum()){ return false;}
+        if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
+        if(ackPkt.getACK() != packetManager.getLocalSequenceNumber+1){ return false; }
+       
+        //wait for FIN
+        r = new byte[maxDatagramPacketLength];
+        udpSocket.receive(dgR); 
+        //check valid ACK: ACK value, checksum, flag 
+        Packet f2 = Packet.deserialize(r);
+        if( !f2.verifyChecksum()){ return false;}
+        if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
+        int finACK = f2.getByteSeqNum(); 
+
+        //reply ACK
+        Packet a2 = new Packet(packetManager.getLocalSequenceNumber());
+        Packet.setFlag(a2, false, false, true);
+        a2.setACK(finACK + 1);
+        Packet.calculateAndSetChecksum(a2);
+
+        DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
+        udpSocket.send( udpA2);
+
+        
+        }catch(IOException ioe){
+            System.err.println("sender close fails: " + ioe);
+            return false;
+        }
+        //close
+        udpSocket.close(); 
+        return true; 
+    }
+
     /**
      * encapsulate a tcp pkt to udp pkt
      */
@@ -289,8 +342,13 @@ public class TCPSend {
                 }
 
                 //TODO:ACKnum should be lastACKExpected 
+                if( ACKNum != lastACKExpected){
+                    System.out.println(" inconsistent ACK before close");
+                    System.exit(1);
+                }
+                activeClose(); 
 
-                //TODO: call connection close function 
+               
             } catch (Exception e) {
                 System.err.println("T3-ACK_Receiver: An error occured:");
                 System.err.println(e);
@@ -371,7 +429,7 @@ public class TCPSend {
             T3_ACKReceiver.join();
             T4_timeoutChecker.join();
 
-            // TODO: Close connection
+    
 
         } catch (SocketException e) {
             System.err.println("SocketException: " + e);

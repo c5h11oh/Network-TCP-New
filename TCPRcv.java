@@ -180,7 +180,8 @@ public class TCPRcv{
                     System.exit(1);
                 }
                 
-            } // end of while(true)
+            } // end of while(true) 
+            //TODO: how to break the loop?
 
             // tell other threads in receiving side that no more packets will come
             synchronized (continuousPackets) {   
