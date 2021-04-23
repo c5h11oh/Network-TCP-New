@@ -109,6 +109,35 @@ public class PacketManager {
         return this.statistics;
     }
 
+    /*
+    This function returns an ACK packet with the current 'Next Byte Expected' in the ackowledge field 
+    Used for both sender and receiver 
+    */
+    public Packet makeACKPacket(){
+        Packet ackPkt = new Packet(this.getLocalSequenceNumber());
+        
+        ackPkt.setACK(
+        this.getRemoteSequenceNumber() == Integer.MAX_VALUE ? this.getRemoteSequenceNumber() + 1 : 0);
+        //TODO: if got MAX_VALUE, set to 0? should it be the opposite?
+    
+        // ackPkt.setTimeStampToCurrent(); 
+        Packet.setFlag(ackPkt, false, false, true);
+        Packet.calculateAndSetChecksum(ackPkt);
+        return ackPkt; 
+    }
+
+
+    /*
+    This function returns a FIN packet, sequence number and ACK consistent with current state of the packet manager
+    */
+    public Packet makeFINPacket(){
+        Packet f = new Packet(this.getLocalSequenceNumber());
+        Packet.setFlag(f, false, true, false);
+        f.setACK( this.getRemoteSequenceNumber() + 1);
+        Packet.calculateAndSetChecksum(f);
+        return f; 
+    }
+
     /*********************************************************************/
     /**********************          Sender         **********************/
     /*********************************************************************/

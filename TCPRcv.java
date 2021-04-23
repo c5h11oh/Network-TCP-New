@@ -111,13 +111,40 @@ public class TCPRcv{
 
     /*
     This function will be called after receive a  FIN message 
-    //correct ACK should be checked at the sender side 
+    correct ACK should be checked at the sender side 
+    @param finPkt: the FIN Packet received
+    @Return true if successfully close, false otherwise 
     */
-    public boolean passiveClose( ){
+    public boolean passiveClose( Packet finPkt ){
+
+        try{
+        //reply ACK
+        Packet a = packetManager.makeACKPacket();
+        assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
+        packetManager.receiverSendUDP(a, udpSocket,  senderPort, senderIp);
+
         //reply FIN
+        Packet f = packetManager.makeFINPacket();
+        packetManager.receiverSendUDP(f,udpSocket,  senderPort, senderIp );
+
         //receive ACK
+        byte[] b = new byte[maxDatagramPacketLength];
+        DatagramPacket dg = new DatagramPacket(b, b.length);
+        udpSocket.receive(dg);
+        Packet a2 = Packet.deserialize(b);
+        if(!a2.verifyChecksum){return false;}
+        if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
+        if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){return false;}
+
+
+        }catch(IOException ioe){
+            System.err.println("receiver passive close fails: " + ioe);
+            return false; 
+        }
+
         //close 
-        return false;
+        udpSocket.close();
+        return true;
     }
 
 
@@ -130,6 +157,7 @@ public class TCPRcv{
     private class ByteRcvr implements Runnable{
 
         public void run(){
+            Packet finPkt = null;
             while (true) {
                 //receiving new UDP packet 
                 byte[] b = new byte[maxDatagramPacketLength];
@@ -148,6 +176,7 @@ public class TCPRcv{
 
                 if(Packet.checkFIN(pkt)) {
                     // Receive FIN. Go to closing connection state.
+                    finPkt = pkt; 
                     break;
                 }
                 
@@ -183,7 +212,7 @@ public class TCPRcv{
                 }
 
                 // send ACK packet
-                Packet ackPckt = makeACKPacket(packetManager); // get `remoteSequenceNumber` from packetManager
+                Packet ackPckt = packetManager.makeACKPacket(); // get `remoteSequenceNumber` from packetManager
                 try{
                     packetManager.receiverSendUDP(ackPckt, udpSocket, senderPort, senderIp);
                 }catch( IOException ioe){
@@ -202,7 +231,7 @@ public class TCPRcv{
             }
             // TODO: After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
             
-            passiveClose();
+            passiveClose(finPkt);
 
 
         }
@@ -420,23 +449,11 @@ public class TCPRcv{
         if( !Packet.checkACK(pkt)) return false; 
         // if(pkt.getACK() != this.packetManager.getLocalSequenceNumber() +1 ) return false; 
         // TODO: ^ What does this line do? Can we accept that sender does not receive our ACK? Or do you mean that pkt.getACK() should always be 1?
+        //sohuld always be 1 before FIN? I think this line is not necessary beside debugging purpose 
         return pkt.verifyChecksum();
     }
 
-    /*
-    This function return an ACK packet with the current 'Next Byte Expected' in the ackowledge field 
-    */
-    private static Packet makeACKPacket(PacketManager pkm){
-        Packet ackPkt = new Packet(pkm.getLocalSequenceNumber());
-        ackPkt.setACK(
-            pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
-            //TODO: if got MAX_VALUE, set to 0? 
-        // ackPkt.setTimeStampToCurrent(); 
-        Packet.setFlag(ackPkt, false, false, true);
-        Packet.calculateAndSetChecksum(ackPkt);
-        return ackPkt; 
-    }
-
+    
     /*
     This function return an SYN+ACK packet with the current 'Next Byte Expected' in the ackowledge field 
     NBE should be 1 
@@ -451,6 +468,8 @@ public class TCPRcv{
         return sap; 
 
     }
+
+    
 
     /****************************************************************************/
     /******************          main work and statistics      ******************/

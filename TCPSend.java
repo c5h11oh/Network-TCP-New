@@ -72,11 +72,7 @@ public class TCPSend {
             timeOut.update(synAckPkt);
 
             // reply with ACK
-            Packet ackPkt = new Packet(packetManager.getLocalSequenceNumber());
-            //same seqNum start from 1 after SYN, but not increase here with ACK sent 
-            Packet.setFlag(ackPkt, false, false, true);
-            ackPkt.setACK(packetManager.getRemoteSequenceNumber() +1 );
-            Packet.calculateAndSetChecksum(ackPkt);
+            Packet ackPkt = packetManager.makeACKPacket();
             //send ACK as udp
             DatagramPacket udpAck = toUDP(ackPkt, remoteIp, remotePort);
             udpSocket.send(udpAck);
@@ -101,11 +97,7 @@ public class TCPSend {
     */
     public boolean activeClose(){
         //send FIN
-        Packet f = new Packet(packetManager.getLocalSequenceNumber());
-        Packet.setFlag(f, false, true, false);
-        f.setACK( packetManager.getRemoteSequenceNumber() + 1);
-        Packet.calculateAndSetChecksum(f);
-
+        Packet f = packetManager.makeFINPacket();
         try{
         DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
         udpSocket.send(udpFin);
@@ -131,10 +123,8 @@ public class TCPSend {
         int finACK = f2.getByteSeqNum(); 
 
         //reply ACK
-        Packet a2 = new Packet(packetManager.getLocalSequenceNumber());
-        Packet.setFlag(a2, false, false, true);
-        a2.setACK(finACK + 1);
-        Packet.calculateAndSetChecksum(a2);
+        Packet a2 = packetManager.makeACKPacket();
+        assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
 
         DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
         udpSocket.send( udpA2);
