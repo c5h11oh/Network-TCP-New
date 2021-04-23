@@ -110,7 +110,7 @@ public class TCPSend {
         DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
         udpSocket.send(udpFin);
         // wait to receive ACK
-        udpSocket.setSoTimeout( timeOut.getTimeout());
+        udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
         byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
         DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
         udpSocket.receive(dgR);
@@ -119,7 +119,7 @@ public class TCPSend {
         Packet ackPkt = Packet.deserialize(r);
         if( !ackPkt.verifyChecksum()){ return false;}
         if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
-        if(ackPkt.getACK() != packetManager.getLocalSequenceNumber+1){ return false; }
+        if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
        
         //wait for FIN
         r = new byte[maxDatagramPacketLength];
@@ -178,7 +178,7 @@ public class TCPSend {
                     sendBuffer.put(data);
                 }
                 sendBuffer.setFileToBufferFinished();
-                fileEndByte = sendBuffer.getLastByteWritten();
+                
 
                 bin.close();
             } catch (NullPointerException e) {
@@ -211,7 +211,7 @@ public class TCPSend {
 
         public void run() {
             try {
-                Packet lastPkt; 
+                Packet lastPkt = null;
 
                 while (sendBuffer.isFileToBufferFinished() == false) {
                     bufferToPacket();
@@ -341,12 +341,13 @@ public class TCPSend {
                     }
                 }
 
-                //TODO:ACKnum should be lastACKExpected 
-                if( ACKNum != lastACKExpected){
+                
+                if( lastACKnum != lastACKExpected){
                     System.out.println(" inconsistent ACK before close");
                     System.exit(1);
                 }
-                activeClose(); 
+
+                while( !activeClose()){} //keep closing until return true
 
                
             } catch (Exception e) {

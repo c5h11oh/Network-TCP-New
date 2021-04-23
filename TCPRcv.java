@@ -75,7 +75,7 @@ public class TCPRcv{
             
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(b);
-            if(!synPkt.checkSYN || synPkt.checkACk || synPkt.checkFIN){ return false;}
+            if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ return false;}
             if(! synPkt.verifyChecksum()){ return false;}
 
             //if valid syn, set remote sequence number as received (should be 0) 
@@ -93,10 +93,10 @@ public class TCPRcv{
             DatagramPacket a = new DatagramPacket( b, maxDatagramPacketLength);
             udpSocket.receive(a);
             Packet aPkt = Packet.deserialize(b);
-            if(!aPkt.checkACK){ return false;}
-            if(aPkt.checkSYN || aPkt.checkFIN) { return false;}
+            if(!Packet.checkACK(aPkt)){ return false;}
+            if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { return false;}
             if(! synPkt.verifyChecksum()){ return false;}
-            if(aPkt.getACK != packetManager.getLocalSequenceNumber){return false;}
+            if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){return false;}
 
 
         
@@ -107,6 +107,17 @@ public class TCPRcv{
 
         return true;
     
+    }
+
+    /*
+    This function will be called after receive a  FIN message 
+    //correct ACK should be checked at the sender side 
+    */
+    public boolean passiveClose( ){
+        //reply FIN
+        //receive ACK
+        //close 
+        return false;
     }
 
 
@@ -181,7 +192,7 @@ public class TCPRcv{
                 }
                 
             } // end of while(true) 
-            //TODO: how to break the loop?
+            
 
             // tell other threads in receiving side that no more packets will come
             synchronized (continuousPackets) {   
@@ -190,6 +201,10 @@ public class TCPRcv{
                 continuousPackets.notifyAll();
             }
             // TODO: After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
+            
+            passiveClose();
+
+
         }
         /**
          * update `continuousPackets` and `remoteSequenceNumber` according to `remoteSequenceNumber`
