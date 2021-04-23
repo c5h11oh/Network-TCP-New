@@ -55,6 +55,7 @@ public class TCPSend {
             // checksum
             Packet synAckPkt = Packet.deserialize(r);
             if (!synAckPkt.verifyChecksum()) {
+                packetManager.getStatistics.incrementIncChecksum(1);
                 return false;
             }
             // check flag
@@ -109,7 +110,9 @@ public class TCPSend {
         
         //check valid ACK: ACK value, checksum, flag 
         Packet ackPkt = Packet.deserialize(r);
-        if( !ackPkt.verifyChecksum()){ return false;}
+        if( !ackPkt.verifyChecksum()){ 
+            packetManager.getStatistics.incrementIncChecksum(1);
+            return false;}
         if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
         if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
        
@@ -118,7 +121,9 @@ public class TCPSend {
         udpSocket.receive(dgR); 
         //check valid ACK: ACK value, checksum, flag 
         Packet f2 = Packet.deserialize(r);
-        if( !f2.verifyChecksum()){ return false;}
+        if( !f2.verifyChecksum()){ 
+            packetManager.getStatistics.incrementIncChecksum(1);
+            return false;}
         if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
         int finACK = f2.getByteSeqNum(); 
 
@@ -188,7 +193,7 @@ public class TCPSend {
 
     }
 
-    /** T2: Find NEW data in buffer and add them to PacketManager */
+    /** T2: Find NEW data in buffer and add them to PacketManager, send to receiver from packet manager in this thread  */
     private class NewPacketSender implements Runnable {
         private InetAddress remoteIp;
         private int remotePort;
@@ -206,11 +211,13 @@ public class TCPSend {
                 while (sendBuffer.isFileToBufferFinished() == false) {
                     bufferToPacket();
                     lastPkt = packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
+                    packetManager.getStatistics.incrementPacketCount(1);
                 }
 
                 while (sendBuffer.getAvailableDataSize() > 0) {
                     bufferToPacket();
                     lastPkt = packetManager.trySendNewData(udpSocket, remotePort, remoteIp);
+                    packetManager.getStatistics.incrementPacketCount(1);
                 }
             
                 // All buffered data has been stored as Packet in PacketManager. Set flag.
@@ -282,16 +289,19 @@ public class TCPSend {
                                 if(p.packet.byteSeqNum == ACKnum){
                                     pp = p;
                                     p.ACKcount++;
+                                    packetManager.getStatistics().incrementDupACKCount();
                                     break;
                                 }
                             }
                             if (pp == null){
+                                //TODO: not sure if count dup ack here
                                 throw new DupACKPacketNotExistException();
+
                             }
                             
                             // Check triple dup ACK?
                             if (pp.ACKcount == 4) { // triple dup ACK
-                                dupACKResend(pp);
+                                dupACKResend(pp);                        
                             }
                         }
                         else if (ACKnum > lastACKnum) { // May be a new ACK or a dup ACK, ACK number is not wrapped
@@ -307,8 +317,10 @@ public class TCPSend {
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
+                                    packetManager.getStatistics().incrementDupACKCount();
                                     if((++p.ACKcount) == 4) {
                                         dupACKResend(p);
+                                        
                                     }
                                 }
                             }
@@ -320,6 +332,7 @@ public class TCPSend {
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
+                                    packetManager.getStatistics().incrementDupACKCount();
                                     if((++p.ACKcount) == 4) {
                                         dupACKResend(p);
                                     }                                
@@ -356,6 +369,9 @@ public class TCPSend {
 
             // Resend packet
             packetManager.dupACKFastRetransmit(resndPWI, udpSocket, remotePort, remoteIp);
+
+            //update statistics
+            packetManager.getStatistics().incrementRetransCount();
         }
     }
 
@@ -430,8 +446,8 @@ public class TCPSend {
 
     // Get statistics
     public String getStatisticsString() {
-        // TODO: Statistics
+        
         Statistics statistics = this.packetManager.getStatistics();
-        return "Statistics not ready!";
+        return statistics.senderStat();
     }
 }

@@ -285,6 +285,7 @@ public class PacketManager {
                 System.err.println("PacketManager: helperCheckExpire: abnormal: " + e);
                 System.exit(1);
             }
+            this.getStatistics().incrementRetransCount();
 
         }else{
             // the current packet not timeout 

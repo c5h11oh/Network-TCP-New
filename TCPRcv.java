@@ -17,6 +17,7 @@ import Statistics.Statistics;
 
 
 //java TCPend -p <port> -m <mtu> -c <sws> -f <file name>
+//<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number>
 
 public class TCPRcv{
     ReceiverBuffer rcvBuffer;
@@ -33,7 +34,7 @@ public class TCPRcv{
     //remote Ip and port 
     InetAddress senderIp; 
     int senderPort; 
-    Statistics statistics;
+    //Statistics statistics;
     boolean noMoreNewPacket = false;
     boolean noMoreNewByte   = false;
 
@@ -76,7 +77,9 @@ public class TCPRcv{
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(b);
             if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ return false;}
-            if(! synPkt.verifyChecksum()){ return false;}
+            if(! synPkt.verifyChecksum()){ 
+                packetManager.getStatistics().incrementIncChecksum(1);
+                return false;}
 
             //if valid syn, set remote sequence number as received (should be 0) 
             packetManager.setRemoteSequenceNumber(synPkt.getByteSeqNum());
@@ -95,7 +98,9 @@ public class TCPRcv{
             Packet aPkt = Packet.deserialize(b);
             if(!Packet.checkACK(aPkt)){ return false;}
             if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { return false;}
-            if(! synPkt.verifyChecksum()){ return false;}
+            if(! synPkt.verifyChecksum()){ 
+                packetManager.getStatistics().incrementIncChecksum(1);
+                return false;}
             if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){return false;}
 
 
@@ -132,7 +137,9 @@ public class TCPRcv{
         DatagramPacket dg = new DatagramPacket(b, b.length);
         udpSocket.receive(dg);
         Packet a2 = Packet.deserialize(b);
-        if(!a2.verifyChecksum){return false;}
+        if(!a2.verifyChecksum){
+            packetManager.getStatistics().incrementIncChecksum(1);
+            return false;}
         if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
         if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){return false;}
 
@@ -169,7 +176,7 @@ public class TCPRcv{
                 }
 
                 Packet pkt = Packet.deserialize(b);
-                if (!checkValidDataPacket(pkt)) {
+                if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
                     System.out.println("Corrupted data received. Drop.");
                     continue;
                 }
@@ -229,7 +236,7 @@ public class TCPRcv{
                 noMoreNewPacket = true;
                 continuousPackets.notifyAll();
             }
-            // TODO: After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
+            // After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
             
             passiveClose(finPkt);
 
@@ -249,6 +256,9 @@ public class TCPRcv{
                 
                 if ( pwi.packet.byteSeqNum == seqNumPrevExamined ) {
                     // do nothing == throw this duplicate PacketWithInfo
+                    //potential discarded disorder pkt
+                    //TODO: anywhere else we drop out-of-order packet?
+                    packetManager.getStatistics().incrementOutSeqDiscardCount();
                     continue;
                 } 
                 else if ( pwi.packet.byteSeqNum > seqNumLookingFor ) {
@@ -341,6 +351,9 @@ public class TCPRcv{
                             System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
                             System.exit(1);
                         }
+                        //update data received in statistics when still have new packet coming 
+                        packetManager.getStatistics().incrementValidDataByte(data.length);
+
                         rcvBuffer.notifyAll();
                     }
                 } // release rcvBuffer lock
@@ -363,6 +376,7 @@ public class TCPRcv{
                     if (bytes.size() == 0) {
                         if (bufFreeSize != rcvBuffer.checkFreeSpace()) {
                             continue;
+                            //TODO: what are we checking here? 
                         }
                         try {
                             rcvBuffer.notifyAll();
@@ -379,6 +393,7 @@ public class TCPRcv{
                             System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
                             System.exit(1);
                         }
+                        packetManager.getStatistics().incrementValidDataByte(data.length);
                         rcvBuffer.notifyAll();
                     }
                 } // release rcvBuffer lock
@@ -444,13 +459,19 @@ public class TCPRcv{
     This function check if the packet receive is a valid data packet 
     checking flags, ack and checksum 
     */
-    private boolean checkValidDataPacket( Packet pkt){
+    private boolean checkValidDataPacket( Packet pkt, Statistics stat){
         if( Packet.checkSYN(pkt)) return false; // Thread 1 has to handle FIN
         if( !Packet.checkACK(pkt)) return false; 
         // if(pkt.getACK() != this.packetManager.getLocalSequenceNumber() +1 ) return false; 
         // TODO: ^ What does this line do? Can we accept that sender does not receive our ACK? Or do you mean that pkt.getACK() should always be 1?
         //sohuld always be 1 before FIN? I think this line is not necessary beside debugging purpose 
-        return pkt.verifyChecksum();
+        if(pkt.verifyChecksum()){
+            return true; 
+        }else{
+            stat.incrementIncChecksum(1);
+            return false; 
+        }
+        
     }
 
     
@@ -516,8 +537,8 @@ public class TCPRcv{
 
     // Get statistics
     public String getStatisticsString() {
-        // TODO: Statistics
+        
         Statistics statistics = this.packetManager.getStatistics();
-        return "Statistics not ready!";
+        return statistics.receiverStat();
     }
 }
