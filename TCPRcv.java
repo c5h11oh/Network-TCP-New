@@ -485,7 +485,7 @@ public class TCPRcv{
         Packet sap = new Packet(pkm.getLocalSequenceNumber());
         sap.setACK(
             pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
-            //TODO:same with above 
+            //TODO:should we set the seq num to 0 if it is MAX_VALUE? ( ie. put 0 at the first position after "?"? )
         Packet.setFlag(sap, true, false ,true );
         Packet.calculateAndSetChecksum(sap); 
         return sap; 
