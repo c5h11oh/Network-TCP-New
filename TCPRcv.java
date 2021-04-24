@@ -411,6 +411,7 @@ public class TCPRcv{
         public void run(){
             // Note that it is because we only have one putter (thread 2) and one getter (thread 3) so that we can use a single lock (rcvBuffer) to control.
             synchronized(rcvBuffer) {
+                // TODO: yayayayayayayayayayayayayayayaay
                 while ( !noMoreNewByte ) {
                     byte[] b = rcvBuffer.getData();
                     
