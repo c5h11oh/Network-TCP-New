@@ -43,15 +43,15 @@ public class SenderBuffer extends Buffer {
 
     private synchronized int checkFreeSpace(){ // `lastByteACK` is NOT free
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
-        if (nextByteExpected == lastByteACK) {
+        if (nextByteExpected == lastByteSent) {
             return 0;
             
         }
-        else if (nextByteExpected > lastByteACK) { // not wrapped
-            return bufferSize - (nextByteExpected - lastByteACK);
+        else if (nextByteExpected > lastByteSent) { // not wrapped
+            return bufferSize - (nextByteExpected - lastByteSent);
         }
         else{   // wrapped
-            return (lastByteACK - nextByteExpected);
+            return (lastByteSent - nextByteExpected);
         }
     }
 
@@ -149,7 +149,7 @@ public class SenderBuffer extends Buffer {
             lastByteSent = byteToBeSent - endByteCount - 1;
         }
         
-        AssertValidSentPointer();
+        //AssertValidSentPointer();
         this.full = false;
         notifyAll();
 
