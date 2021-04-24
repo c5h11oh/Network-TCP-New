@@ -148,7 +148,7 @@ public class PacketManager {
     public void output(Packet p, String person){
         //snd 34.335 S - - - 0 0 0
         //<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number> 
-        double outputTime = (double)(System.currentTimeMillis() - this.programInitTime);
+        double outputTime = (double)(System.currentTimeMillis() - this.programInitTime)/1000; //in sec
         String tStr = String.format("%.3f", outputTime);
         tStr = String.format("%8.8s", tStr);
         //String all = String.format()
