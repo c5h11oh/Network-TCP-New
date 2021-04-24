@@ -221,7 +221,15 @@ public class PacketManager {
         Packet lastSent = null; 
         
         assert vacancy >= 0;
-        if (vacancy == 0) return lastSent;
+        while (vacancy == 0) {
+            notifyAll();
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                vacancy = windowSize - inTransitPacket;
+            }
+            
+        }
 
         for(PacketWithInfo p : this.queue) {
             if((p.sent == false) && (vacancy > 0)) {
@@ -260,6 +268,7 @@ public class PacketManager {
     public synchronized void decrementInTransitPacket() {
         inTransitPacket -= 1;
         assert inTransitPacket >= 0;
+        this.notifyAll();
     }
     
     /**

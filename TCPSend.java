@@ -228,6 +228,7 @@ public class TCPSend {
                 // All buffered data has been stored as Packet in PacketManager. Set flag.
                 packetManager.setAllPacketsEnqueued();
                 lastACKExpected = lastPkt.getByteSeqNum() + lastPkt.getDataLength() +1 ;
+
                 //when all data are sent, we can send FIN when the lastACKExpected received 
 
             } catch (Exception e) {
