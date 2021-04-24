@@ -126,7 +126,7 @@ public class SenderBuffer extends Buffer {
         }
         
         int byteToBeSent;
-        boolean wrapped = (lastByteWritten > lastByteSent);//??seem like this boolean is true if not wrapped 
+        boolean wrapped = !(lastByteWritten > lastByteSent);
 
        
 
