@@ -16,6 +16,7 @@ public class PacketManager {
     private int inTransitPacket;
     private PriorityBlockingQueue<PacketWithInfo> queue;
     private Statistics statistics;
+    private long programInitTime; //time in ms when TCPEnd init
     /** 
      * Sender: localSequenceNumber is the sequence number to be put on Packet.byteSeqNum. That is, the next packet's starting byte sequence number. Get this value with getLocalSequenceNumber(). Once a packet is made, localSequenceNumber needs to be incremented by data length using increaseLocalSequenceNumber(). Only use setLocalSequenceNumber() in initial setup phase. 
      * Receiver: Similarly, localSequenceNumber is also the next packet's starting sequence number. While the receiver never send data, this will be changed after sending SYN and FIN.
@@ -30,7 +31,7 @@ public class PacketManager {
     private boolean allPacketsEnqueued;
     
 
-    public PacketManager( int windowSize, Comparator<PacketWithInfo> cmp){
+    public PacketManager( int windowSize, Comparator<PacketWithInfo> cmp, long programInitTime){
         this.windowSize = windowSize;
         remoteSequenceNumber = 0;
         localSequenceNumber = 0;
@@ -38,6 +39,7 @@ public class PacketManager {
         allPacketsEnqueued = false;
         queue = new PriorityBlockingQueue<PacketWithInfo>(11, cmp);
         inTransitPacket = 0;
+        this.programInitTime = programInitTime;
     }
 
     /*********************************************************************/
@@ -138,6 +140,35 @@ public class PacketManager {
         return f; 
     }
 
+
+    /*This function print out host out put
+    @param p: the packet that we want to print output on
+    @person: snd/ rcv depends on sender or receiver
+    */ 
+    public void output(Packet p, String person){
+        //snd 34.335 S - - - 0 0 0
+        //<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number> 
+        long outputTime = (System.currentTimeMillis() - this.programInitTime);
+        String tStr = String.format("%.3f", outputTime);
+        tStr = String.format("%8.8s", tStr);
+        //String all = String.format()
+        String syn = (Packet.checkSYN(p))? "S":"-" ; 
+        String ack =(Packet.checkACK(p))? "A":"-" ; 
+        String fin = (Packet.checkFIN(p))? "F":"-" ; 
+        String d = "-";
+        if(!Packet.checkSYN(p) && !Packet.checkFIN(p) && Packet.checkACK(p)){
+            if(p.getDataLength()>0){
+                d = "D";
+            }
+        }
+        
+        //8 %
+
+        System.out.printf("%s %s %s %s %s %s %d %d %d\n", person, tStr, syn, ack, fin, d, p.getByteSeqNum(),p.getDataLength(), p.getACK());
+
+
+    }
+
     /*********************************************************************/
     /**********************          Sender         **********************/
     /*********************************************************************/
@@ -170,6 +201,7 @@ public class PacketManager {
         byte[] data = Packet.serialize(pwi.packet);
         DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
         udpSocket.send(udpPkt);
+        output(pwi.packet, "snd");
         
         pwi.sent = true;
         if (isNewData == true) {
@@ -199,6 +231,7 @@ public class PacketManager {
                     System.err.println("PacketManager: trySendNewData: abnormal: " + e);
                     System.exit(1);
                 }
+                output(p.packet, "snd");
                 lastSent = p.packet; 
                 --vacancy;
             }
@@ -218,6 +251,7 @@ public class PacketManager {
             System.err.println("PacketManager: dupACKFastRetransmit: abnormal: " + e);
             System.exit(1);
         }
+        output( pwi.packet, "snd");
     }
 
     /**
@@ -285,6 +319,7 @@ public class PacketManager {
                 System.err.println("PacketManager: helperCheckExpire: abnormal: " + e);
                 System.exit(1);
             }
+            output(head2.packet, "snd");
             this.getStatistics().incrementRetransCount();
 
         }else{
@@ -359,6 +394,9 @@ public class PacketManager {
         byte[] data = Packet.serialize(pkt);
         DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
         udpSocket.send(udpPkt);
+        output(pkt, "rcv");
+
+        
     }
 
 }

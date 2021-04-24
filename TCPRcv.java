@@ -37,11 +37,12 @@ public class TCPRcv{
     //Statistics statistics;
     boolean noMoreNewPacket = false;
     boolean noMoreNewByte   = false;
+    //long initTime;
 
     /****************************************************************************/
     /******************               Constructor              ******************/
     /****************************************************************************/
-    public TCPRcv(int listenPort, int mtu, int windowSize, String filename) throws BufferSizeException{
+    public TCPRcv(int listenPort, int mtu, int windowSize, String filename, long initTime) throws BufferSizeException{
         this.listenPort = listenPort;
         this.mtu = mtu;
         this.windowSize = windowSize;
@@ -49,7 +50,8 @@ public class TCPRcv{
         bufferSize = mtu * windowSize * 3 / 2;
         rcvBuffer = new ReceiverBuffer(bufferSize, mtu, windowSize);
         continuousPackets = new LinkedBlockingQueue<Packet>();
-        packetManager = new PacketManager(windowSize, new RcvPacketComparator());
+        packetManager = new PacketManager(windowSize, new RcvPacketComparator(), initTime);
+        
         // Note: See PacketManager.java to get localSequenceNumber and remoteSequenceNumber's definition for detailed explanation.
         // packetManager's remoteSequenceNumber stores the last continuous byte received from the sender
         // its local seq num stores any sequence number of packet sent by the receiver (mostly not change besides after SYN and FIN)

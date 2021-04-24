@@ -26,6 +26,7 @@ public class TCPSend {
     final InetAddress remoteIp;
     final int remotePort;
     int lastACKExpected = -1; //use to indicate the start of connection closing 
+    long initTime;
 
     /*********************************************************************/
     /********************** Connections and Packets **********************/
@@ -43,6 +44,7 @@ public class TCPSend {
             // send SYN
             DatagramPacket udpSyn = toUDP(synPkt, remoteIp, remotePort);
             udpSocket.send(udpSyn);
+            packetManager.output(synPkt, "snd");
             // wait to receive SYN+ ACK
             udpSocket.setSoTimeout(initTimeOutInMilli);
             byte[] r = new byte[256]; // pkt buffer for reverse direction
@@ -77,6 +79,7 @@ public class TCPSend {
             //send ACK as udp
             DatagramPacket udpAck = toUDP(ackPkt, remoteIp, remotePort);
             udpSocket.send(udpAck);
+            packetManager.output(ackPkt, "snd");
 
             // return false if timeout
         } catch (SocketTimeoutException ste) {
@@ -102,6 +105,7 @@ public class TCPSend {
         try{
         DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
         udpSocket.send(udpFin);
+        packetManager.output(f, "snd");
         // wait to receive ACK
         udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
         byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
@@ -133,6 +137,7 @@ public class TCPSend {
 
         DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
         udpSocket.send( udpA2);
+        packetManager.output(a2, "snd");
 
         
         }catch(IOException ioe){
@@ -402,16 +407,17 @@ public class TCPSend {
 
     /* java TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws> */
     // TCPSend Constructor
-    public TCPSend(int localPort, InetAddress remoteIp, int remotePort, String fileName, int mtu, int windowSize) throws SocketException, BufferSizeException {
+    public TCPSend(int localPort, InetAddress remoteIp, int remotePort, String fileName, int mtu, int windowSize, long initTime) throws SocketException, BufferSizeException {
         this.localPort = localPort;
         this.remoteIp = remoteIp;
         this.remotePort = remotePort;
         bufferSize = (int)(mtu * windowSize * 3 / 2);
         sendBuffer = new SenderBuffer(bufferSize, mtu, windowSize);
-        packetManager = new PacketManager(windowSize, new PacketWithInfoComparator());
+        packetManager = new PacketManager(windowSize, new PacketWithInfoComparator(), initTime);
         timeOut = new Timeout(0.875, 0.75, initTimeOutInMilli * 1000000);
         filePath = Paths.get(fileName);
         this.mtu = mtu;
+        this.initTime = initTime; //time in ms 
     }
 
     // Main running program
@@ -450,4 +456,6 @@ public class TCPSend {
         Statistics statistics = this.packetManager.getStatistics();
         return statistics.senderStat();
     }
+
+    
 }

@@ -4,6 +4,8 @@ import java.net.UnknownHostException;
 public class TCPEnd {
     private static final String usage = "usage: %n (as sender) \t\t\t\tjava TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws> %n (as receiver) \t\t\t\tjava TCPend -p <port> -m <mtu> -c <sws> -f <file name> %n (debug purpose only - sender) \t\tjava TCPend -t sender %n (debug purpose only - receiver) \tjava TCPend -t receiver %n";
     public static void main(String args[]) throws Exception {
+        long initTime = System.currentTimeMillis();
+
         if (args.length == 2) {
             // Only for testing. Delete this before submittal
             for (int i = 0; i < args.length; ++i) {
@@ -11,13 +13,13 @@ public class TCPEnd {
                     ++i;
                     switch (args[i]) {
                         case "sender":
-                            TCPSend send = new TCPSend(2608, InetAddress.getLocalHost(), 2806, "FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30);
+                            TCPSend send = new TCPSend(2608, InetAddress.getLocalHost(), 2806, "FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30,initTime);
                             send.work(); // fake input
                             System.out.println( send.getStatisticsString() );
                             System.exit(0);
                             break;
                         case "receiver":
-                            TCPRcv rcv = new TCPRcv(2806, 1400, 30, "receive.pdf");
+                            TCPRcv rcv = new TCPRcv(2806, 1400, 30, "receive.pdf", initTime);
                             rcv.work();
                             // System.out.println( rcv.getStatisticsString() );
                             System.exit(0);
@@ -68,7 +70,7 @@ public class TCPEnd {
                 ++i;
             }
 
-            TCPRcv rcv = new TCPRcv(port, mtu, sws, fileName);
+            TCPRcv rcv = new TCPRcv(port, mtu, sws, fileName, initTime);
             rcv.work();
             // System.out.println( rcv.getStatisticsString() );
             System.exit(0);
@@ -120,7 +122,7 @@ public class TCPEnd {
                 }
                 ++i;
             }
-            TCPSend send = new TCPSend(port, remoteIp, remotePort, fileName, mtu, sws);
+            TCPSend send = new TCPSend(port, remoteIp, remotePort, fileName, mtu, sws, initTime);
             send.work();
             System.out.println( send.getStatisticsString() );
             System.exit(0);
