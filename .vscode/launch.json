@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch TCPEnd as Sender",
+            "request": "launch",
+            "mainClass": "TCPEnd",
+            "args": ["-p", "2356", "-s", "10.141.171.175", "-a", "2357", "-f", "${workspaceFolder}/FilesToBeSend/gdb-tutorial-handout.pdf", "-m", "1400", "-c", "30"]
+        },
+        {
+            "type": "java",
+            "name": "Launch TCPEnd as Receiver",
+            "request": "launch",
+            "mainClass": "TCPEnd",
+            "args": ["-p", "2357", "-m", "1400", "-c", "30", "-f", "${workspaceFolder}/receive.pdf", ]
+        }
+    ]
+}
