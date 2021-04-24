@@ -139,7 +139,7 @@ public class TCPRcv{
         DatagramPacket dg = new DatagramPacket(b, b.length);
         udpSocket.receive(dg);
         Packet a2 = Packet.deserialize(b);
-        if(!a2.verifyChecksum){
+        if(!a2.verifyChecksum()){
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}
         if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
@@ -259,7 +259,6 @@ public class TCPRcv{
                 if ( pwi.packet.byteSeqNum == seqNumPrevExamined ) {
                     // do nothing == throw this duplicate PacketWithInfo
                     //potential discarded disorder pkt
-                    //TODO: anywhere else we drop out-of-order packet?
                     packetManager.getStatistics().incrementOutSeqDiscardCount();
                     continue;
                 } 
@@ -354,7 +353,7 @@ public class TCPRcv{
                             System.exit(1);
                         }
                         //update data received in statistics when still have new packet coming 
-                        packetManager.getStatistics().incrementValidDataByte(data.length);
+                        packetManager.getStatistics().incrementValidDataByte(bytes.size());
 
                         rcvBuffer.notifyAll();
                     }
@@ -378,7 +377,6 @@ public class TCPRcv{
                     if (bytes.size() == 0) {
                         if (bufFreeSize != rcvBuffer.checkFreeSpace()) {
                             continue;
-                            //TODO: what are we checking here? 
                         }
                         try {
                             rcvBuffer.notifyAll();
@@ -395,7 +393,7 @@ public class TCPRcv{
                             System.err.println("TCPRcv: Thread 2: insufficient buffer size: " + e);
                             System.exit(1);
                         }
-                        packetManager.getStatistics().incrementValidDataByte(data.length);
+                        packetManager.getStatistics().incrementValidDataByte(bytes.size());
                         rcvBuffer.notifyAll();
                     }
                 } // release rcvBuffer lock
@@ -484,8 +482,7 @@ public class TCPRcv{
     private static Packet makeSAPacket(PacketManager pkm){
         Packet sap = new Packet(pkm.getLocalSequenceNumber());
         sap.setACK(
-            pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? pkm.getRemoteSequenceNumber() + 1 : 0);
-            //TODO:should we set the seq num to 0 if it is MAX_VALUE? ( ie. put 0 at the first position after "?"? )
+            pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? 0 :( pkm.getRemoteSequenceNumber() + 1) ) ;
         Packet.setFlag(sap, true, false ,true );
         Packet.calculateAndSetChecksum(sap); 
         return sap; 
