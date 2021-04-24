@@ -128,14 +128,14 @@ public class SenderBuffer extends Buffer {
         int byteToBeSent;
         boolean wrapped = !(lastByteWritten > lastByteSent);
 
-       
-
         if (!wrapped) { // Not wrapped
             byteToBeSent = Math.min(length, lastByteWritten - lastByteSent);
         }
         else { // wrapped
             byteToBeSent = Math.min(length, lastByteWritten + bufferSize - lastByteSent);
         }
+
+        wrapped = (lastByteSent + byteToBeSent) >= (bufferSize);
         
         byte[] returnData = new byte[byteToBeSent];
         if(!wrapped) {
