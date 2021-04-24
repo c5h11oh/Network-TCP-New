@@ -269,8 +269,10 @@ public class TCPRcv{
                 }
                 else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
                     // the next continuous PacketWithInfo. put it in continuousPackets' tail
-                    continuousPackets.add(pwi.packet);
-                    continuousPackets.notifyAll();
+                    synchronized (continuousPackets) {
+                        continuousPackets.add(pwi.packet);
+                        continuousPackets.notifyAll();                            
+                    }
 
                     // update the remote sequence number, the seq number we're looking for in the next iteration
                     packetManager.increaseRemoteSequenceNumber(pwi.packet.getDataLength()); 
