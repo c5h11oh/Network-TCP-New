@@ -93,7 +93,7 @@ public class TCPSend {
             // other IOException
 
         }
-        return false;
+        return true;
     }
 
     /*
