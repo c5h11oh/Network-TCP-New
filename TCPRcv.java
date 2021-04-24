@@ -402,10 +402,7 @@ public class TCPRcv{
             }
 
             // all data are in rcvBuffer. tell thread 3 this good news in case it is waiting
-            synchronized(rcvBuffer){
-                noMoreNewByte = true;
-                rcvBuffer.notifyAll();
-            }
+            rcvBuffer.setNoMoreNewByteToTrue();
         }
     }
     

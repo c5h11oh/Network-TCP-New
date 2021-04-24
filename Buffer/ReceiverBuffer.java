@@ -9,10 +9,11 @@ public class ReceiverBuffer extends Buffer {
     /* "Pointers" that are indices of the buffer. Check validility by AssertValidPointers() */
     private int lastByteRead;
     private int nextByteExpected;
+    private boolean noMoreNewByte;
     // private int lastByteRcvd;
 
     /* obsolete */
-    // private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
+    // private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer
     
     public ReceiverBuffer(int bufferSize, int mtu, int windowSize) throws BufferSizeException {
         super(++bufferSize, mtu, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
@@ -30,9 +31,14 @@ public class ReceiverBuffer extends Buffer {
         return this.nextByteExpected;
     }
 
-    // public boolean isAllDataReceived(){
-    //     return allDataReceived;
-    // }
+    public boolean getNoMoreNewByte() {
+        return this.noMoreNewByte;
+    }
+
+    public void setNoMoreNewByteToTrue() {
+        this.noMoreNewByte = true;
+        notifyAll();
+    }
 
     public int checkFreeSpace(){ // `lastByteRead` is NOT free
         if (nextByteExpected == lastByteRead){ 
