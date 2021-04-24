@@ -150,7 +150,7 @@ public class PacketManager {
         //<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number> 
         double outputTime = (double)(System.currentTimeMillis() - this.programInitTime);
         String tStr = String.format("%.3f", outputTime);
-        StStr = String.format("%8.8s", tStr);
+        tStr = String.format("%8.8s", tStr);
         //String all = String.format()
         String syn = (Packet.checkSYN(p))? "S":"-" ; 
         String ack =(Packet.checkACK(p))? "A":"-" ; 

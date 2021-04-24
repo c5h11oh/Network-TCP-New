@@ -172,7 +172,11 @@ public class Packet {
     }
 
     public int getDataLength(){
-        return this.data.length;
+        if(this.data == null){
+            return 0;
+        }else{
+            return this.data.length;
+        }
     }
 
     public byte[] getData() {
