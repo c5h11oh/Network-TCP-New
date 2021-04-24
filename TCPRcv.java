@@ -20,7 +20,7 @@ import Statistics.Statistics;
 //<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number>
 
 public class TCPRcv{
-    ReceiverBuffer rcvBuffer;
+    final ReceiverBuffer rcvBuffer;
     LinkedBlockingQueue<Packet> continuousPackets;
     PacketManager packetManager;
     int bufferSize;  // will be determined in construction: 1.5*sws*mtu
