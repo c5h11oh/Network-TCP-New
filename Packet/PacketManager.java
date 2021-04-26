@@ -216,11 +216,13 @@ public class PacketManager {
     This function try to send a new Data packet and return the TCP pkt (Packet) sent successfully 
     Return null if not send  
     */
-    public synchronized Packet trySendNewData(DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+    public synchronized Packet trySendNewData(DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, DebugException {
         int vacancy = windowSize - inTransitPacket;
         Packet lastSent = null; 
         
-        assert vacancy >= 0;
+        if (vacancy < 0) {
+            throw new DebugException();
+        }
         while (vacancy == 0) {
             notifyAll();
             try {
@@ -265,9 +267,11 @@ public class PacketManager {
     /**
      * Sender T3: Call this function whenever we remove one PacketWithInfo from PacketManager.queue
      */
-    public synchronized void decrementInTransitPacket() {
+    public synchronized void decrementInTransitPacket() throws DebugException {
         inTransitPacket -= 1;
-        assert inTransitPacket >= 0;
+        if ( inTransitPacket < 0 ) {
+            throw new DebugException();
+        }
         this.notifyAll();
     }
     
