@@ -289,8 +289,11 @@ public class PacketManager {
                 try{
                     wait();
                 } catch (InterruptedException e) {
-                    continue;
                 }
+            }
+
+            if (this.queue.isEmpty()) {
+                continue;
             }
 
             //check packets and retransmit until find unexpired packets 
