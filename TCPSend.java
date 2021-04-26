@@ -387,9 +387,18 @@ public class TCPSend {
                 while( !activeClose()){} //keep closing until return true
 
                
-            } catch (Exception e) {
-                System.err.println("T3-ACK_Receiver: An error occured:");
+            } 
+            catch (IOException e) {
                 System.err.println(e);
+                throw new RuntimeException("IO Exception");
+            }
+            catch (DebugException e) {
+                System.err.println(e);
+                throw new RuntimeException("Debug Exception");
+            }
+            catch (DupACKPacketNotExistException e) {
+                System.err.println(e);
+                throw new RuntimeException("Dup ACK");
             }
         }
 
