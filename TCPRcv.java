@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import Buffer.ReceiverBuffer;
 import Exceptions.BufferInsufficientSpaceException;
 import Exceptions.BufferSizeException;
+import Exceptions.DebugException;
 import Packet.*;
 import Statistics.Statistics;
 
@@ -135,7 +136,7 @@ public class TCPRcv{
         Packet a = packetManager.makeACKPacket();
         //assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
         if( a.getACK() == finPkt.getByteSeqNum()+1){
-            throw new DebugException("receiver close wrong ACK replied to FIN");
+            throw new DebugException();
         }
         packetManager.receiverSendUDP(a, udpSocket,  senderPort, senderIp);
 
@@ -253,8 +254,13 @@ public class TCPRcv{
                 continuousPackets.notifyAll();
             }
             // After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
+            try{  
+                passiveClose(finPkt);
+              }catch (DebugException de){
+                System.err.print(de);
+                throw new RuntimeException(de.toString());
+              }
             
-            passiveClose(finPkt);
 
 
         }
