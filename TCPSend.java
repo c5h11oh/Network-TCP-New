@@ -70,6 +70,7 @@ public class TCPSend {
             }
             // update remote seqNum
             packetManager.setRemoteSequenceNumber(synAckPkt.getByteSeqNum());
+            packetManager.output(synAckPkt, "rcv");
             
             // calculate timeout
             timeOut.update(synAckPkt);
@@ -119,6 +120,7 @@ public class TCPSend {
             return false;}
         if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
         if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
+        packetManager.output(ackPkt, "rcv");
        
         //wait for FIN
         r = new byte[maxDatagramPacketLength];
@@ -129,6 +131,7 @@ public class TCPSend {
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}
         if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
+        packetManager.output(f2, "rcv");
         int finACK = f2.getByteSeqNum(); 
 
         //reply ACK
@@ -286,6 +289,7 @@ public class TCPSend {
                         ACKpktSerial.setLength(b.length);
                         udpSocket.receive(ACKpktSerial);
                         Packet ACKpkt = Packet.deserialize(ACKpktSerial.getData());
+                        packetManager.output(ACKpkt, "rcv");
                         int ACKnum = ACKpkt.ACK;
                        
 

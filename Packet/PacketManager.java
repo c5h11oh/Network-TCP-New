@@ -145,7 +145,7 @@ public class PacketManager {
     @param p: the packet that we want to print output on
     @person: snd/ rcv depends on sender or receiver
     */ 
-    public void output(Packet p, String person){
+    public void output(Packet p, String action){
         //snd 34.335 S - - - 0 0 0
         //<snd/rcv> <time> <flag-list> <seq-number> <number of bytes> <ack number> 
         double outputTime = (double)(System.currentTimeMillis() - this.programInitTime)/1000; //in sec
@@ -403,7 +403,7 @@ public class PacketManager {
         byte[] data = Packet.serialize(pkt);
         DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
         udpSocket.send(udpPkt);
-        output(pkt, "rcv");
+        output(pkt, "snd"); //receiver send ack 
 
         
     }
