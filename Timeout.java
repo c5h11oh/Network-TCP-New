@@ -23,6 +23,7 @@ public class Timeout {
         this.timeout = initTimeout;
         this.estRTT = initTimeout / 2;
         this.estDEV = 0;
+        System.out.println("Timeout: initially" + this.timeout/1000000 + "milliseconds.");
     }
     
     public long getTimeout(){
@@ -51,6 +52,7 @@ public class Timeout {
             estDEV = (long)(b * estDEV + (1-b) * sampleDEV);
             timeout = estRTT + 4 * estDEV;
         }
+        System.out.println("Timeout: updated timeout: " + this.timeout / 1000000 + "milliseconds.");
     }
 
 }
