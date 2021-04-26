@@ -77,6 +77,7 @@ public class TCPRcv{
 
             // get the correct size of data
             byte[] bb = new byte[synUDP.getLength()];
+            System.arraycopy(b, 0, bb, 0, bb.length);
             
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(bb);
