@@ -56,7 +56,7 @@ public class TCPSend {
 
             // checksum
             byte[] bb = new byte[dgR.getLength()];
-            System.arraycopy(dgR, 0, bb, 0, bb.length);
+            System.arraycopy(r, 0, bb, 0, bb.length);
 
             Packet synAckPkt = Packet.deserialize(bb);
             if (!synAckPkt.verifyChecksum()) {
@@ -116,7 +116,7 @@ public class TCPSend {
         
         //check valid ACK: ACK value, checksum, flag 
         byte[] bb = new byte[dgR.getLength()];
-        System.arraycopy(dgR, 0, bb, 0, bb.length);
+        System.arraycopy(r, 0, bb, 0, bb.length);
         Packet ackPkt = Packet.deserialize(bb);
         if( !ackPkt.verifyChecksum()){ 
             packetManager.getStatistics().incrementIncChecksum(1);
@@ -130,7 +130,7 @@ public class TCPSend {
         udpSocket.receive(dgR); 
         //check valid ACK: ACK value, checksum, flag 
         bb = new byte[dgR.getLength()];
-        System.arraycopy(dgR, 0, bb, 0, bb.length);
+        System.arraycopy(r, 0, bb, 0, bb.length);
         Packet f2 = Packet.deserialize(bb);
         if( !f2.verifyChecksum()){ 
             packetManager.getStatistics().incrementIncChecksum(1);
