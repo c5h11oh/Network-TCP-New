@@ -406,7 +406,7 @@ public class TCPSend {
                 throw new RuntimeException("IO Exception");
             }
             catch (DebugException e) {
-                System.err.println(e);
+                System.err.println(e.getStackTrace());
                 throw new RuntimeException("Debug Exception");
             }
             catch (DupACKPacketNotExistException e) {
