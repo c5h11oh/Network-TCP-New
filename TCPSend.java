@@ -136,7 +136,7 @@ public class TCPSend {
         Packet a2 = packetManager.makeACKPacket();
         //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
         if( a2.getACK() == finACK+1){
-            throw new DebugException("sender reply receiver's FIN with incorrect ACK");
+            throw new DebugException();
         }
 
         DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
@@ -144,25 +144,7 @@ public class TCPSend {
         packetManager.output(a2, "snd");
 
         
-            //wait for FIN
-            r = new byte[maxDatagramPacketLength];
-            udpSocket.receive(dgR); 
-            //check valid ACK: ACK value, checksum, flag 
-            Packet f2 = Packet.deserialize(r);
-            if( !f2.verifyChecksum()){ 
-                packetManager.getStatistics().incrementIncChecksum(1);
-                return false;}
-            if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
-            packetManager.output(f2, "rcv");
-            int finACK = f2.getByteSeqNum(); 
-
-            //reply ACK
-            Packet a2 = packetManager.makeACKPacket();
-            assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
-
-            DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
-            udpSocket.send( udpA2);
-            packetManager.output(a2, "snd");
+            
         }
         catch(IOException ioe){
             System.err.println("sender close fails: " + ioe);
@@ -194,7 +176,11 @@ public class TCPSend {
                 BufferedInputStream bin = new BufferedInputStream(in);
                 int bufFreeSpace, writeLength;
                 while ((writeLength = bin.available()) > 0) {
-                    bufFreeSpace = sendBuffer.waitForFreeSpace();
+                    try{
+                        bufFreeSpace = sendBuffer.waitForFreeSpace();
+                    }catch(DebugException de){
+                        throw new RuntimeException(de.toString());
+                    }
 
                     writeLength = Math.min(writeLength, bufFreeSpace);
                     byte[] data = new byte[writeLength];
@@ -290,7 +276,7 @@ public class TCPSend {
 
     /** T3: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket  */
     private class ACKReceiver implements Runnable {
-        public void run() throws DebugException{
+        public void run(){
             try{
                 byte[] b = new byte[maxDatagramPacketLength];
                 DatagramPacket ACKpktSerial = new DatagramPacket(b, b.length);
@@ -346,7 +332,7 @@ public class TCPSend {
 
                                     // remove received packets from queue
                                     if (packetManager.getQueue().remove(p) != true) {
-                                        throw new DebugException();
+                                        throw new RuntimeException("assert problem");
                                     }
                                     packetManager.decrementInTransitPacket();
                                 }
@@ -364,7 +350,7 @@ public class TCPSend {
                                 if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
                                     //assert packetManager.getQueue().remove(p) == true;
                                     if(!packetManager.getQueue().remove(p)){
-                                        throw new DebugException();
+                                        throw new RuntimeException("assert problem");
                                     }
                                     packetManager.decrementInTransitPacket();
                                 }

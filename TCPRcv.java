@@ -135,8 +135,8 @@ public class TCPRcv{
         //reply ACK
         Packet a = packetManager.makeACKPacket();
         //assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
-        if( a.getACK() == finPkt.getByteSeqNum()+1) {
-            throw new DebugException("receiver close wrong ACK replied to FIN");
+        if( a.getACK() == finPkt.getByteSeqNum()+1){
+            throw new DebugException();
         }
         packetManager.receiverSendUDP(a, udpSocket,  senderPort, senderIp);
 
@@ -254,7 +254,13 @@ public class TCPRcv{
                 continuousPackets.notifyAll();
             }
             // After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
-            passiveClose(finPkt);
+            try{  
+                passiveClose(finPkt);
+              }catch (DebugException de){
+                System.err.print(de);
+                throw new RuntimeException(de.toString());
+              }
+            
 
 
         }
