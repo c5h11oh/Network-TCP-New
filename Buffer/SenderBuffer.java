@@ -61,6 +61,7 @@ public class SenderBuffer extends Buffer {
             full = true;
             notifyAll();
             try{
+                System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::waitForFreeSpace()" );
                 wait();
             } catch (InterruptedException e) {
                 System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::waitForFreeSpace()" );
@@ -125,8 +126,11 @@ public class SenderBuffer extends Buffer {
             // The app still has data wishes to send. Notify it 
             notifyAll();
             try{
+                System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::getDataToSend()" );
                 wait();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::getDataToSend()" );
+            }
         }
         
         int byteToBeSent;
