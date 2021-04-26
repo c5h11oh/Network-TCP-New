@@ -20,7 +20,7 @@ public class TCPSend {
     int mtu;
     DatagramSocket udpSocket;
     Timeout timeOut;
-    int initTimeOutInMilli = 600 * 1000; // in ms
+    int initTimeOutInMilli = 5 * 1000; // in ms
     final int maxDatagramPacketLength = 1518; // in byte
     final int localPort;
     final InetAddress remoteIp;
