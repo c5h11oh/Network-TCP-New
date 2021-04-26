@@ -15,14 +15,16 @@
             "name": "Launch TCPEnd as Sender",
             "request": "launch",
             "mainClass": "TCPEnd",
-            "args": ["-p", "2356", "-s", "10.141.42.223", "-a", "2357", "-f", "${workspaceFolder}/FilesToBeSend/gdb-tutorial-handout.pdf", "-m", "1400", "-c", "30"]
+            "args": ["-p", "2356", "-s", "10.141.42.223", "-a", "2357", "-f", "${workspaceFolder}/FilesToBeSend/gdb-tutorial-handout.pdf", "-m", "1400", "-c", "30"],
+            "vmArgs": "-ea"
         },
         {
             "type": "java",
             "name": "Launch TCPEnd as Receiver",
             "request": "launch",
             "mainClass": "TCPEnd",
-            "args": ["-p", "2357", "-m", "1400", "-c", "30", "-f", "${workspaceFolder}/receive.pdf", ]
+            "args": ["-p", "2357", "-m", "1400", "-c", "30", "-f", "${workspaceFolder}/receive.pdf", ],
+            "vmArgs": "-ea"
         }
     ]
 }

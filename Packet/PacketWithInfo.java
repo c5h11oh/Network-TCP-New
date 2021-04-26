@@ -41,7 +41,7 @@ public class PacketWithInfo {
      */
     public PacketWithInfo getResendPacketWithInfo(int remoteSequenceNumber){
         if (this.resendCount == 16) {
-            System.err.println("Has retransmitted a packet 16 times. Aborting.");
+            System.err.println("Has retransmitted a packet 16 times. Aborting." + this.packet.byteSeqNum);
             System.exit(1);
         }
         
