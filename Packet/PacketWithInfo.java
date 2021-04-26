@@ -52,7 +52,8 @@ public class PacketWithInfo {
 
         PacketWithInfo resendPacketWithInfo = new PacketWithInfo(resendPacket);
         resendPacketWithInfo.resendCount = this.resendCount + 1;
-        resendPacketWithInfo.timeOut = this.timeOut * 2;
+        // don't double timeout
+        resendPacketWithInfo.timeOut = this.timeOut;
         resendPacketWithInfo.ACKcount = this.ACKcount;
 
         return resendPacketWithInfo;

@@ -206,6 +206,7 @@ public class PacketManager {
         
         pwi.sent = true;
         if (isNewData == true) {
+            System.out.println("Increment inTransitPacket");
             ++inTransitPacket;
         }
         if (inTransitPacket > windowSize) {
@@ -229,13 +230,13 @@ public class PacketManager {
         while (vacancy == 0) {
             notifyAll();
             try {
-                System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::trySendNewData()" );
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::trySendNewData()" );
                 wait();
             } catch (InterruptedException e) {
-                System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::trySendNewData()" );
-                System.out.println("Thread: " + Thread.currentThread().getName() + ": before recalculate, vacancy = " + vacancy + ". (should be 0)");
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::trySendNewData()" );
+                // System.out.println("Thread: " + Thread.currentThread().getName() + ": before recalculate, vacancy = " + vacancy + ". (should be 0)");
                 vacancy = windowSize - inTransitPacket;
-                System.out.println("Thread: " + Thread.currentThread().getName() + ": after recalculate, vacancy = " + vacancy + ".");
+                // System.out.println("Thread: " + Thread.currentThread().getName() + ": after recalculate, vacancy = " + vacancy + ".");
             }
             
         }
@@ -276,6 +277,7 @@ public class PacketManager {
      */
     public synchronized void decrementInTransitPacket() throws DebugException {
         inTransitPacket -= 1;
+        System.out.println("Decremented inTransitPacket");
         if ( inTransitPacket < 0 ) {
             throw new DebugException();
         }
@@ -298,10 +300,10 @@ public class PacketManager {
                 // notify T2 to put packet to queue
                 notifyAll();
                 try{
-                    System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
+                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
                     wait();
                 } catch (InterruptedException e) {
-                    System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
+                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
 
                 }
             }
@@ -354,10 +356,10 @@ public class PacketManager {
             // the current packet not timeout 
             notifyAll();
             try{
-                System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
                 wait(timeRemain); 
             } catch (InterruptedException e) {
-                System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
             }
         }
     }
