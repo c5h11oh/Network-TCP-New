@@ -300,13 +300,13 @@ public class TCPSend {
                 
                 long debugCounter = 0;
 
-                while( !packetManager.isAllPacketsEnqueued() ){
-                    // if(packetManager.getQueue().isEmpty()){
-                    //     // No packet waiting for an ACK. Yield.
-                    //     System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": PM is empty. yield.");
-                    //     Thread.yield();
-                    // }
-                    // else{
+                while( !packetManager.isAllPacketsEnqueued() || !packetManager.getQueue().isEmpty() ){
+                    if(packetManager.getQueue().isEmpty()){
+                        // No packet waiting for an ACK. Yield.
+                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": PM is empty. yield.");
+                        Thread.yield();
+                    }
+                    else{
                         ACKpktSerial.setLength(b.length);
                         System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Listen to udpSocket.");
                         udpSocket.receive(ACKpktSerial);
@@ -386,7 +386,7 @@ public class TCPSend {
                         }
 
                         lastACKnum = ACKnum;
-                    // }
+                    }
 
                     debugCounter++;
                 }
