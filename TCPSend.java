@@ -7,6 +7,7 @@ import java.nio.file.*;
 import java.util.NoSuchElementException;
 import java.io.*;
 
+import Timeout.*;
 import Packet.*;
 import Buffer.*;
 import Exceptions.*;
@@ -41,6 +42,7 @@ public class TCPSend {
             Packet synPkt = new Packet(packetManager.getLocalSequenceNumber()); // localSeqNum is 0
             Packet.setFlag(synPkt, true, false, false);
             Packet.calculateAndSetChecksum(synPkt);
+            synPkt.setTimeStampToCurrent();
             // send SYN
             DatagramPacket udpSyn = toUDP(synPkt, remoteIp, remotePort);
             udpSocket.send(udpSyn);
