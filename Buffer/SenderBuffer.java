@@ -55,7 +55,7 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    public synchronized int waitForFreeSpace(){
+    public synchronized int waitForFreeSpace() throws DebugException{
         int fs; 
         while((fs = this.checkFreeSpace()) == 0){
             full = true;
@@ -64,7 +64,9 @@ public class SenderBuffer extends Buffer {
                 wait();
             } catch (InterruptedException e) {}
         }
-        assert fs > 0;
+        if (fs <= 0) {
+            throw new DebugException();
+        }
         
         return fs;
     }

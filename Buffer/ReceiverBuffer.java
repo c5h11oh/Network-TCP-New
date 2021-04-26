@@ -108,7 +108,9 @@ public class ReceiverBuffer extends Buffer {
             System.arraycopy(this.buf, 0, returnData, endByteCount, dataLength - endByteCount);
             lastByteRead = dataLength - endByteCount - 1;
         }
-        assert lastByteRead == lastContinuousByte;
+        if (lastByteRead != lastContinuousByte) {
+            throw new RuntimeException();
+        }
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 

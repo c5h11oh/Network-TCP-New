@@ -89,10 +89,8 @@ public class TCPSend {
             System.err.println("establish connection timeout: " + ste);
             return false;
         } catch (Exception e) {
-            // IllegalArgumentException from connect() - if the IP address is null, or the
-            // port is out of range
-            // other IOException
-
+            e.printStackTrace();
+            throw new RuntimeException();
         }
         return true;
     }
@@ -146,7 +144,27 @@ public class TCPSend {
         packetManager.output(a2, "snd");
 
         
-        }catch(IOException ioe){
+            //wait for FIN
+            r = new byte[maxDatagramPacketLength];
+            udpSocket.receive(dgR); 
+            //check valid ACK: ACK value, checksum, flag 
+            Packet f2 = Packet.deserialize(r);
+            if( !f2.verifyChecksum()){ 
+                packetManager.getStatistics().incrementIncChecksum(1);
+                return false;}
+            if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
+            packetManager.output(f2, "rcv");
+            int finACK = f2.getByteSeqNum(); 
+
+            //reply ACK
+            Packet a2 = packetManager.makeACKPacket();
+            assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
+
+            DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
+            udpSocket.send( udpA2);
+            packetManager.output(a2, "snd");
+        }
+        catch(IOException ioe){
             System.err.println("sender close fails: " + ioe);
             return false;
         }
@@ -400,13 +418,17 @@ public class TCPSend {
     /** T4: check packets in packet manager to see if any timeout stop checking and sleep when seeing the fisrt unexpired packet retransmit expired */
     private class timeoutChecker implements Runnable{
 
-        public void run(){
+        public void run() {
             try {
                 packetManager.checkExpire(  udpSocket,  remotePort,  remoteIp);
             }
             catch (IOException e){
                 System.err.println("T4-timeoutChecker: IOException:");
                 System.err.println(e);
+            }
+            catch (DebugException e) {
+                e.printStackTrace();
+                throw new RuntimeException();
             }
             // catch (NoSuchElementException e){
             //     System.err.println("T4-timeoutChecker: NoSuchElementException:");

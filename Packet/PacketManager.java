@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.concurrent.PriorityBlockingQueue;
+
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 
@@ -187,7 +188,7 @@ public class PacketManager {
      * @param remoteIp
      * @throws IOException
      */
-    private synchronized void senderSendUDP( boolean isNewData, PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, ExceedWindowSizeException {
+    private synchronized void senderSendUDP( boolean isNewData, PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, ExceedWindowSizeException, DebugException {
         // need to check if we will exceed window size if this is new data packet
         if((isNewData == true) && (inTransitPacket == windowSize)) {
             throw new ExceedWindowSizeException();
@@ -207,7 +208,9 @@ public class PacketManager {
         if (isNewData == true) {
             ++inTransitPacket;
         }
-        assert inTransitPacket <= windowSize;
+        if (inTransitPacket > windowSize) {
+            throw new DebugException();
+        }
 
         notifyAll();
     }
@@ -254,7 +257,7 @@ public class PacketManager {
      * Sender T3: Call this function if it needs to retransmit packet because of duplicate ACKs.
      * @throws IOException
      */
-    public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException {
+    public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, DebugException {
         try {
             senderSendUDP(false, pwi, udpSocket, remotePort, remoteIp);
         }catch (ExceedWindowSizeException e) {
@@ -279,7 +282,7 @@ public class PacketManager {
     Sender T4: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
-    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException {
+    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
                 //if unexpired pkt found 
@@ -316,7 +319,7 @@ public class PacketManager {
     /**
      * Sender T4: Checking timeout. Only called by checkExpire()
      */
-    private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException {
+    private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
 
         PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
         
