@@ -100,7 +100,7 @@ public class TCPSend {
     /*
     This function signifies the receiver to close the connection and waits for response 
     */
-    public boolean activeClose(){
+    public boolean activeClose() throws DebugException{
         //send FIN
         Packet f = packetManager.makeFINPacket();
         try{
@@ -136,7 +136,10 @@ public class TCPSend {
 
         //reply ACK
         Packet a2 = packetManager.makeACKPacket();
-        assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
+        //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
+        if( a2.getACK() == finACK+1){
+            throw new DebugException("sender reply receiver's FIN with incorrect ACK");
+        }
 
         DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
         udpSocket.send( udpA2);
@@ -269,7 +272,7 @@ public class TCPSend {
 
     /** T3: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket  */
     private class ACKReceiver implements Runnable {
-        public void run() {
+        public void run() throws DebugException{
             try{
                 byte[] b = new byte[maxDatagramPacketLength];
                 DatagramPacket ACKpktSerial = new DatagramPacket(b, b.length);
@@ -324,7 +327,10 @@ public class TCPSend {
                                     if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
 
                                     // remove received packets from queue
-                                    assert packetManager.getQueue().remove(p) == true;
+                                    //assert packetManager.getQueue().remove(p) == true;
+                                    if( !packetManager.getQueue().remove(p)){
+                                        throw new DebugException();
+                                    }
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
@@ -339,7 +345,10 @@ public class TCPSend {
                         else { // May be a new ACK or a dup ACK, ACK number is wrapped
                             for(PacketWithInfo p : packetManager.getQueue()){
                                 if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
-                                    assert packetManager.getQueue().remove(p) == true;
+                                    //assert packetManager.getQueue().remove(p) == true;
+                                    if(!packetManager.getQueue().remove(p)){
+                                        throw new DebugException();
+                                    }
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
@@ -370,12 +379,15 @@ public class TCPSend {
             }
         }
 
-        private void dupACKResend(PacketWithInfo p) throws IOException {
+        private void dupACKResend(PacketWithInfo p) throws IOException, DebugException {
             // Make resend packet with info
             PacketWithInfo resndPWI = p.getResendPacketWithInfo(packetManager.getRemoteSequenceNumber());
 
             // Update PacketManager (remove old, add new)
-            assert packetManager.getQueue().remove(p) == true;
+            //assert packetManager.getQueue().remove(p) == true;
+            if( ! packetManager.getQueue().remove(p)){
+                throw new DebugException();
+            }
             packetManager.getQueue().add(resndPWI);
 
             // Resend packet
