@@ -36,7 +36,6 @@ public class TCPRcv{
     int senderPort; 
     //Statistics statistics;
     boolean noMoreNewPacket = false;
-    boolean noMoreNewByte   = false;
     //long initTime;
 
     /****************************************************************************/
@@ -410,43 +409,29 @@ public class TCPRcv{
     private class BufferToFile implements Runnable {
         public void run(){
             // Note that it is because we only have one putter (thread 2) and one getter (thread 3) so that we can use a single lock (rcvBuffer) to control.
-            synchronized(rcvBuffer) {
-                // TODO: yayayayayayayayayayayayayayayaay
-                while ( !noMoreNewByte ) {
-                    byte[] b = rcvBuffer.getData();
-                    
-                    // if there is no data, wait(). when wake up, go back to start of while loop.
-                    if (b == null) {
-                        rcvBuffer.notifyAll();
-                        try{
-                            rcvBuffer.wait();
-                        } catch (InterruptedException e) {
-                            // should have been called by thread 2's notifyAll() because some bytes has been put or noMoreNewByte == true
-                            continue;
-                        }
-                    }
+            while ( rcvBuffer.getNoMoreNewByte() == false ) {
+                byte[] b = rcvBuffer.waitAndGetData();
 
-                    // there is data. write all data into the file
-                    try {
-                        fileOstream.write(b);
-                    } catch (IOException e) {
-                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
-                        System.exit(1);
-                    }
-
-                    // notify thread 2 that rcvBuffer is now empty
-                    rcvBuffer.notifyAll();
+                // there is data. write all data into the file
+                try {
+                    fileOstream.write(b);
+                } catch (IOException e) {
+                    System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                    System.exit(1);
                 }
 
-                // The buffer may contain last piece of data (or not)
-                byte[] b = rcvBuffer.getData();
-                if( b != null ) {
-                    try {
-                        fileOstream.write(b);
-                    } catch (IOException e) {
-                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
-                        System.exit(1);
-                    }
+                // notify thread 2 that rcvBuffer is now empty
+                rcvBuffer.notifyAll();
+            }
+
+            // The buffer may contain last piece of data (or not)
+            byte[] b = rcvBuffer.getData();
+            if( b != null ) {
+                try {
+                    fileOstream.write(b);
+                } catch (IOException e) {
+                    System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                    System.exit(1);
                 }
             }
         }

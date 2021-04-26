@@ -77,14 +77,6 @@ public class ReceiverBuffer extends Buffer {
         this.notifyAll();
     }
 
-    // public synchronized void put(byte[] data, boolean finish) 
-    //              throws BufferInsufficientSpaceException{
-    //     put(data);
-    //     if(finish){
-    //         this.allDataReceived = true;
-    //     }
-    // }
-
     /*
      * Get as much data as possible.
      */
@@ -120,10 +112,19 @@ public class ReceiverBuffer extends Buffer {
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    // Seems I cannot check if the pointer is valid. Every position has its meaning.
-    // private void AssertValidPointers() throws InvalidPointerException{
-    //     if (lastByteRead >= nextByteExpected /* || nextByteExpected > lastByteRcvd + 1 */ ) {
-    //         throw new InvalidPointerException();
-    //     }
-    // }
+    public synchronized byte[] waitAndGetData() {
+        byte[] b = this.getData();
+                    
+        // if there is no data, wait(). when wake up, go back to start of while loop.
+        while (b == null && this.noMoreNewByte == false) {
+            this.notifyAll();
+            try{
+                this.wait();
+            } catch (InterruptedException e) {
+                b = this.getData();
+            }
+        }
+
+        return b;
+    }
 }
