@@ -74,9 +74,12 @@ public class TCPRcv{
         try{
             //try to receive SYN 
             udpSocket.receive(synUDP); 
+
+            // get the correct size of data
+            byte[] bb = new byte[synUDP.getLength()];
             
             //check flag and checksum 
-            Packet synPkt = Packet.deserialize(b);
+            Packet synPkt = Packet.deserialize(bb);
             if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ return false;}
             if(! synPkt.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);

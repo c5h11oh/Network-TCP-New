@@ -288,7 +288,9 @@ public class TCPSend {
                     else{
                         ACKpktSerial.setLength(b.length);
                         udpSocket.receive(ACKpktSerial);
-                        Packet ACKpkt = Packet.deserialize(ACKpktSerial.getData());
+                        byte[] bb = new byte[ACKpktSerial.getLength()];
+                        System.arraycopy(b, 0, bb, 0, ACKpktSerial.getLength());
+                        Packet ACKpkt = Packet.deserialize(bb);
                         packetManager.output(ACKpkt, "rcv");
                         int ACKnum = ACKpkt.ACK;
                        

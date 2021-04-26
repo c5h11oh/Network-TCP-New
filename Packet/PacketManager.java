@@ -143,7 +143,7 @@ public class PacketManager {
 
     /*This function print out host out put
     @param p: the packet that we want to print output on
-    @person: snd/ rcv depends on sender or receiver
+    @action: snd/ rcv depends on whether this packet is being sent/received
     */ 
     public void output(Packet p, String action){
         //snd 34.335 S - - - 0 0 0
@@ -164,7 +164,7 @@ public class PacketManager {
         
         //8 %
 
-        System.out.printf("%s %s %s %s %s %s %d %d %d\n", person, tStr, syn, ack, fin, d, p.getByteSeqNum(),p.getDataLength(), p.getACK());
+        System.out.printf("%s %s %s %s %s %s %d %d %d\n", action, tStr, syn, ack, fin, d, p.getByteSeqNum(),p.getDataLength(), p.getACK());
 
 
     }
