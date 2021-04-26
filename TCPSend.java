@@ -98,27 +98,51 @@ public class TCPSend {
     /*
     This function signifies the receiver to close the connection and waits for response 
     */
-    public boolean activeClose() {
+    public boolean activeClose() throws DebugException{
         //send FIN
         Packet f = packetManager.makeFINPacket();
         try{
-            DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
-            udpSocket.send(udpFin);
-            packetManager.output(f, "snd");
-            // wait to receive ACK
-            udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
-            byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
-            DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
-            udpSocket.receive(dgR);
-            
-            //check valid ACK: ACK value, checksum, flag 
-            Packet ackPkt = Packet.deserialize(r);
-            if( !ackPkt.verifyChecksum()){ 
-                packetManager.getStatistics().incrementIncChecksum(1);
-                return false;}
-            if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
-            if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
-            packetManager.output(ackPkt, "rcv");
+        DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
+        udpSocket.send(udpFin);
+        packetManager.output(f, "snd");
+        // wait to receive ACK
+        udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
+        byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
+        DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
+        udpSocket.receive(dgR);
+        
+        //check valid ACK: ACK value, checksum, flag 
+        Packet ackPkt = Packet.deserialize(r);
+        if( !ackPkt.verifyChecksum()){ 
+            packetManager.getStatistics().incrementIncChecksum(1);
+            return false;}
+        if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
+        if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
+        packetManager.output(ackPkt, "rcv");
+       
+        //wait for FIN
+        r = new byte[maxDatagramPacketLength];
+        udpSocket.receive(dgR); 
+        //check valid ACK: ACK value, checksum, flag 
+        Packet f2 = Packet.deserialize(r);
+        if( !f2.verifyChecksum()){ 
+            packetManager.getStatistics().incrementIncChecksum(1);
+            return false;}
+        if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
+        packetManager.output(f2, "rcv");
+        int finACK = f2.getByteSeqNum(); 
+
+        //reply ACK
+        Packet a2 = packetManager.makeACKPacket();
+        //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
+        if( a2.getACK() == finACK+1){
+            throw new DebugException("sender reply receiver's FIN with incorrect ACK");
+        }
+
+        DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
+        udpSocket.send( udpA2);
+        packetManager.output(a2, "snd");
+
         
             //wait for FIN
             r = new byte[maxDatagramPacketLength];
@@ -266,7 +290,7 @@ public class TCPSend {
 
     /** T3: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket  */
     private class ACKReceiver implements Runnable {
-        public void run() {
+        public void run() throws DebugException{
             try{
                 byte[] b = new byte[maxDatagramPacketLength];
                 DatagramPacket ACKpktSerial = new DatagramPacket(b, b.length);
@@ -338,7 +362,10 @@ public class TCPSend {
                         else { // May be a new ACK or a dup ACK, ACK number is wrapped
                             for(PacketWithInfo p : packetManager.getQueue()){
                                 if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
-                                    assert packetManager.getQueue().remove(p) == true;
+                                    //assert packetManager.getQueue().remove(p) == true;
+                                    if(!packetManager.getQueue().remove(p)){
+                                        throw new DebugException();
+                                    }
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
@@ -374,7 +401,10 @@ public class TCPSend {
             PacketWithInfo resndPWI = p.getResendPacketWithInfo(packetManager.getRemoteSequenceNumber());
 
             // Update PacketManager (remove old, add new)
-            assert packetManager.getQueue().remove(p) == true;
+            //assert packetManager.getQueue().remove(p) == true;
+            if( ! packetManager.getQueue().remove(p)){
+                throw new DebugException();
+            }
             packetManager.getQueue().add(resndPWI);
 
             // Resend packet

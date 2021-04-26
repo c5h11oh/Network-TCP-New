@@ -128,12 +128,15 @@ public class TCPRcv{
     @param finPkt: the FIN Packet received
     @Return true if successfully close, false otherwise 
     */
-    public boolean passiveClose( Packet finPkt ){
+    public boolean passiveClose( Packet finPkt ) throws DebugException{
 
         try{
         //reply ACK
         Packet a = packetManager.makeACKPacket();
-        assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
+        //assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
+        if( a.getACK() == finPkt.getByteSeqNum()+1){
+            throw new DebugException("receiver close wrong ACK replied to FIN");
+        }
         packetManager.receiverSendUDP(a, udpSocket,  senderPort, senderIp);
 
         //reply FIN
