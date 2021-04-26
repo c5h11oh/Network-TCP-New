@@ -82,6 +82,7 @@ public class TCPRcv{
             
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(bb);
+            System.out.println("synPkt timestamp: " + synPkt.timeStamp);
             if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ 
                 System.out.println(" syn flag problem");
                 return  false;}
@@ -98,7 +99,8 @@ public class TCPRcv{
             packetManager.output(synPkt, "rcv");
 
             //reply with SYN and ACK and incr loacl sequence number by 1 
-            Packet sap = makeSAPacket(packetManager); 
+            Packet sap = makeSAPacket(packetManager, synPkt); 
+            System.out.println("sap timestamp: " + sap.timeStamp);
             packetManager.receiverSendUDP(sap, udpSocket,  senderPort, senderIp);
             packetManager.increaseLocalSequenceNumber(1);
 
@@ -501,11 +503,12 @@ public class TCPRcv{
     This function return an SYN+ACK packet with the current 'Next Byte Expected' in the ackowledge field 
     NBE should be 1 
     */
-    private static Packet makeSAPacket(PacketManager pkm){
+    private static Packet makeSAPacket(PacketManager pkm, Packet pktRcvd){
         Packet sap = new Packet(pkm.getLocalSequenceNumber());
         sap.setACK(
             pkm.getRemoteSequenceNumber() == Integer.MAX_VALUE ? 0 :( pkm.getRemoteSequenceNumber() + 1) ) ;
         Packet.setFlag(sap, true, false ,true );
+        sap.timeStamp = pktRcvd.timeStamp;
         Packet.calculateAndSetChecksum(sap); 
         return sap; 
 
