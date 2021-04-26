@@ -493,19 +493,19 @@ public class TCPRcv{
             // Send SYN + ACK and start thread 1
 
             // Thread 1: to rcv packet and put into packet manager. handle FIN and close connection
-            Thread T1_storePacketAndACK = new Thread(new ByteRcvr());
+            Thread T0_storePacketAndACK = new Thread(new ByteRcvr());
             // Thread 2: Get data from packet manager and put them to rcvBuffer
-            Thread T2_packetToBuffer = new Thread(new PacketToBuffer());
+            Thread T1_packetToBuffer = new Thread(new PacketToBuffer());
             // Thread 3: retrieve data from rcvBuffer and store it to the file system
-            Thread T3_bufferToFile = new Thread(new BufferToFile());
+            Thread T2_bufferToFile = new Thread(new BufferToFile());
 
-            T1_storePacketAndACK.start();
-            T2_packetToBuffer.start();
-            T3_bufferToFile.start();
+            T0_storePacketAndACK.start();
+            T1_packetToBuffer.start();
+            T2_bufferToFile.start();
 
-            T1_storePacketAndACK.join();
-            T2_packetToBuffer.join();
-            T3_bufferToFile.join();
+            T0_storePacketAndACK.join();
+            T1_packetToBuffer.join();
+            T2_bufferToFile.join();
             fileOstream.close();
 
         }

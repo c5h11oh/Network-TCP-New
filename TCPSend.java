@@ -20,7 +20,7 @@ public class TCPSend {
     int mtu;
     DatagramSocket udpSocket;
     Timeout timeOut;
-    int initTimeOutInMilli = 5 * 1000; // in ms
+    int initTimeOutInMilli = 600 * 1000; // in ms
     final int maxDatagramPacketLength = 1518; // in byte
     final int localPort;
     final InetAddress remoteIp;
@@ -427,20 +427,20 @@ public class TCPSend {
             // try to handshake until connection established
             while (!estConnection(remoteIp, remotePort)) {
             }
-            Thread T1_fileToBuffer = new Thread(new FileToBuffer());
-            Thread T2_newPacketSender = new Thread(new NewPacketSender(remoteIp, remotePort));
-            Thread T3_ACKReceiver = new Thread(new ACKReceiver());
-            Thread T4_timeoutChecker = new Thread( new timeoutChecker());
+            Thread T0_fileToBuffer = new Thread(new FileToBuffer());
+            Thread T1_newPacketSender = new Thread(new NewPacketSender(remoteIp, remotePort));
+            Thread T2_ACKReceiver = new Thread(new ACKReceiver());
+            Thread T3_timeoutChecker = new Thread( new timeoutChecker());
 
-            T1_fileToBuffer.start();
-            T2_newPacketSender.start();
-            T3_ACKReceiver.start();
-            T4_timeoutChecker.start();
+            T0_fileToBuffer.start();
+            T1_newPacketSender.start();
+            T2_ACKReceiver.start();
+            T3_timeoutChecker.start();
 
-            T1_fileToBuffer.join();
-            T2_newPacketSender.join();
-            T3_ACKReceiver.join();
-            T4_timeoutChecker.join();
+            T0_fileToBuffer.join();
+            T1_newPacketSender.join();
+            T2_ACKReceiver.join();
+            T3_timeoutChecker.join();
 
     
 
