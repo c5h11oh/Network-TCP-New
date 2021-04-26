@@ -289,7 +289,7 @@ public class TCPRcv{
             // put back PacketWithInfo in pwiToBePutBack to packetManager
             try {
                 while (true) {
-                    packetManager.getQueue().add( pwiToBePutBack.poll() );
+                    packetManager.getQueue().add( pwiToBePutBack.remove() );
                 }
             } catch (NoSuchElementException e) {}
         }
