@@ -86,6 +86,8 @@ public class TCPRcv{
             packetManager.setRemoteSequenceNumber(synPkt.getByteSeqNum());
             this.senderIp = synUDP.getAddress();
             this.senderPort = synUDP.getPort();
+            //print received packet
+            packetManager.output(synPkt, "rcv");
 
             //reply with SYN and ACK and incr loacl sequence number by 1 
             Packet sap = makeSAPacket(packetManager); 
@@ -103,6 +105,7 @@ public class TCPRcv{
                 packetManager.getStatistics().incrementIncChecksum(1);
                 return false;}
             if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){return false;}
+            packetManager.output(aPkt, "rcv");
 
 
         
@@ -143,6 +146,7 @@ public class TCPRcv{
             return false;}
         if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
         if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){return false;}
+        packetManager.output(a2, "rcv");
 
 
         }catch(IOException ioe){
@@ -181,6 +185,8 @@ public class TCPRcv{
                     System.out.println("Corrupted data received. Drop.");
                     continue;
                 }
+
+                packetManager.output(pkt, "rcv");
 
                 if(Packet.checkFIN(pkt)) {
                     // Receive FIN. Go to closing connection state.
