@@ -254,7 +254,7 @@ public class PacketManager {
     }
 
     /**
-     * Sender T3: Call this function if it needs to retransmit packet because of duplicate ACKs.
+     * Sender T2: Call this function if it needs to retransmit packet because of duplicate ACKs.
      * @throws IOException
      */
     public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, DebugException {
@@ -268,7 +268,7 @@ public class PacketManager {
     }
 
     /**
-     * Sender T3: Call this function whenever we remove one PacketWithInfo from PacketManager.queue
+     * Sender T2: Call this function whenever we remove one PacketWithInfo from PacketManager.queue
      */
     public synchronized void decrementInTransitPacket() throws DebugException {
         inTransitPacket -= 1;
@@ -279,7 +279,7 @@ public class PacketManager {
     }
     
     /**
-    Sender T4: This function scan through the queue and checking unexpired packets all time 
+    Sender T3: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
     public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
@@ -317,7 +317,7 @@ public class PacketManager {
     }
 
     /**
-     * Sender T4: Checking timeout. Only called by checkExpire()
+     * Sender T3: Checking timeout. Only called by checkExpire()
      */
     private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
 

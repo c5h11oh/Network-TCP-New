@@ -62,7 +62,9 @@ public class SenderBuffer extends Buffer {
             notifyAll();
             try{
                 wait();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::waitForFreeSpace()" );
+            }
         }
         if (fs <= 0) {
             throw new DebugException();

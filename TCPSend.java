@@ -176,7 +176,7 @@ public class TCPSend {
     /******************** Runnable objects (Threads) *********************/
     /*********************************************************************/
 
-    /** T1: Application that puts file data into send buffer */
+    /** T0: Application that puts file data into send buffer */
     private class FileToBuffer implements Runnable {
         public void run() {
             try (InputStream in = Files.newInputStream(filePath, StandardOpenOption.READ)) {
@@ -215,7 +215,7 @@ public class TCPSend {
 
     }
 
-    /** T2: Find NEW data in buffer and add them to PacketManager, send to receiver from packet manager in this thread  */
+    /** T1: Find NEW data in buffer and add them to PacketManager, send to receiver from packet manager in this thread  */
     private class NewPacketSender implements Runnable {
         private InetAddress remoteIp;
         private int remotePort;
@@ -281,7 +281,7 @@ public class TCPSend {
         }
     }
 
-    /** T3: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket  */
+    /** T2: Receiving ACK, update PacketManager. Use RTT to update timeout. If Triple DupACK, send packet to socket  */
     private class ACKReceiver implements Runnable {
         public void run(){
             try{
@@ -408,7 +408,7 @@ public class TCPSend {
         }
     }
 
-    /** T4: check packets in packet manager to see if any timeout stop checking and sleep when seeing the fisrt unexpired packet retransmit expired */
+    /** T3: check packets in packet manager to see if any timeout stop checking and sleep when seeing the fisrt unexpired packet retransmit expired */
     private class timeoutChecker implements Runnable{
 
         public void run() {
@@ -460,10 +460,10 @@ public class TCPSend {
             // try to handshake until connection established
             while (!estConnection(remoteIp, remotePort)) {
             }
-            Thread T0_fileToBuffer = new Thread(new FileToBuffer());
-            Thread T1_newPacketSender = new Thread(new NewPacketSender(remoteIp, remotePort));
-            Thread T2_ACKReceiver = new Thread(new ACKReceiver());
-            Thread T3_timeoutChecker = new Thread( new timeoutChecker());
+            Thread T0_fileToBuffer = new Thread(new FileToBuffer(), "T0_fileToBuffer");
+            Thread T1_newPacketSender = new Thread(new NewPacketSender(remoteIp, remotePort), "T1_newPacketSender");
+            Thread T2_ACKReceiver = new Thread(new ACKReceiver(), "T2_ACKReceiver");
+            Thread T3_timeoutChecker = new Thread( new timeoutChecker(), "T3_timeoutChecker");
 
             T0_fileToBuffer.start();
             T1_newPacketSender.start();
