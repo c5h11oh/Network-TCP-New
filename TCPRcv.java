@@ -135,7 +135,7 @@ public class TCPRcv{
 
         try{
         //reply ACK
-        Packet a = packetManager.makeACKPacket();
+        Packet a = packetManager.makeACKPacket(finPkt);
         //assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
         if( a.getACK() == finPkt.getByteSeqNum()+1){
             throw new DebugException();
@@ -242,7 +242,7 @@ public class TCPRcv{
                 }
 
                 // send ACK packet
-                Packet ackPckt = packetManager.makeACKPacket(); // get `remoteSequenceNumber` from packetManager
+                Packet ackPckt = packetManager.makeACKPacket(pkt); // get `remoteSequenceNumber` from packetManager
                 try{
                     packetManager.receiverSendUDP(ackPckt, udpSocket, senderPort, senderIp);
                 }catch( IOException ioe){

@@ -79,7 +79,7 @@ public class TCPSend {
             timeOut.update(synAckPkt);
 
             // reply with ACK
-            Packet ackPkt = packetManager.makeACKPacket();
+            Packet ackPkt = packetManager.makeACKPacket(synAckPkt);
             //send ACK as udp
             DatagramPacket udpAck = toUDP(ackPkt, remoteIp, remotePort);
             udpSocket.send(udpAck);
@@ -140,7 +140,7 @@ public class TCPSend {
         int finACK = f2.getByteSeqNum(); 
 
         //reply ACK
-        Packet a2 = packetManager.makeACKPacket();
+        Packet a2 = packetManager.makeACKPacket(f2);
         //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
         if( a2.getACK() == finACK+1){
             throw new DebugException();

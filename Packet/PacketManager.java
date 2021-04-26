@@ -116,14 +116,14 @@ public class PacketManager {
     This function returns an ACK packet with the current 'Next Byte Expected' in the ackowledge field 
     Used for both sender and receiver 
     */
-    public Packet makeACKPacket(){
+    public Packet makeACKPacket(Packet pktReceived){
 
         
         Packet ackPkt = new Packet(this.getLocalSequenceNumber());
         ackPkt.setACK(
         this.getRemoteSequenceNumber() == Integer.MAX_VALUE ? 0: this.getRemoteSequenceNumber() + 1 ) ;
     
-        // ackPkt.setTimeStampToCurrent(); 
+        ackPkt.timeStamp = pktReceived.timeStamp;
         Packet.setFlag(ackPkt, false, false, true);
         Packet.calculateAndSetChecksum(ackPkt);
         return ackPkt; 
