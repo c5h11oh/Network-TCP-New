@@ -103,7 +103,9 @@ public class TCPRcv{
             b = new byte[maxDatagramPacketLength];
             DatagramPacket a = new DatagramPacket( b, maxDatagramPacketLength);
             udpSocket.receive(a);
-            Packet aPkt = Packet.deserialize(b);
+            bb = new byte[a.getLength()];
+            System.arraycopy(b, 0, bb, 0, bb.length);
+            Packet aPkt = Packet.deserialize(bb);
             if(!Packet.checkACK(aPkt)){ return false;}
             if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { return false;}
             if(! synPkt.verifyChecksum()){ 
@@ -148,7 +150,11 @@ public class TCPRcv{
         byte[] b = new byte[maxDatagramPacketLength];
         DatagramPacket dg = new DatagramPacket(b, b.length);
         udpSocket.receive(dg);
-        Packet a2 = Packet.deserialize(b);
+
+        byte[] bb = new byte[dg.getLength()];
+        System.arraycopy(b, 0, bb, 0, bb.length);
+
+        Packet a2 = Packet.deserialize(bb);
         if(!a2.verifyChecksum()){
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}

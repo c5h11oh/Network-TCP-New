@@ -55,7 +55,10 @@ public class TCPSend {
             packetManager.setLocalSequenceNumber(1); // local seq increase after SYN, when send data, use buffer index as seqNum
 
             // checksum
-            Packet synAckPkt = Packet.deserialize(r);
+            byte[] bb = new byte[dgR.getLength()];
+            System.arraycopy(dgR, 0, bb, 0, bb.length);
+
+            Packet synAckPkt = Packet.deserialize(bb);
             if (!synAckPkt.verifyChecksum()) {
                 packetManager.getStatistics().incrementIncChecksum(1);
                 return false;
@@ -112,7 +115,9 @@ public class TCPSend {
         udpSocket.receive(dgR);
         
         //check valid ACK: ACK value, checksum, flag 
-        Packet ackPkt = Packet.deserialize(r);
+        byte[] bb = new byte[dgR.getLength()];
+        System.arraycopy(dgR, 0, bb, 0, bb.length);
+        Packet ackPkt = Packet.deserialize(bb);
         if( !ackPkt.verifyChecksum()){ 
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}
@@ -124,7 +129,9 @@ public class TCPSend {
         r = new byte[maxDatagramPacketLength];
         udpSocket.receive(dgR); 
         //check valid ACK: ACK value, checksum, flag 
-        Packet f2 = Packet.deserialize(r);
+        bb = new byte[dgR.getLength()];
+        System.arraycopy(dgR, 0, bb, 0, bb.length);
+        Packet f2 = Packet.deserialize(bb);
         if( !f2.verifyChecksum()){ 
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}
