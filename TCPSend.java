@@ -42,8 +42,9 @@ public class TCPSend {
 
             Packet synPkt = new Packet(packetManager.getLocalSequenceNumber()); // localSeqNum is 0
             Packet.setFlag(synPkt, true, false, false);
-            Packet.calculateAndSetChecksum(synPkt);
             synPkt.setTimeStampToCurrent();
+            Packet.calculateAndSetChecksum(synPkt);
+
             // send SYN
             DatagramPacket udpSyn = toUDP(synPkt, remoteIp, remotePort);
             udpSocket.send(udpSyn);
