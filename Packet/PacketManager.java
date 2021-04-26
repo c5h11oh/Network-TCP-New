@@ -283,12 +283,14 @@ public class PacketManager {
         //end while, another while loop to check until queue empty 
 
         while( !allPacketsEnqueued){
-            if(this.queue.isEmpty()){
+            if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
                 notifyAll();
                 try{
                     wait();
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                    continue;
+                }
             }
 
             //check packets and retransmit until find unexpired packets 

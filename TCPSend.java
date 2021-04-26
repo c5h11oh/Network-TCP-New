@@ -397,10 +397,11 @@ public class TCPSend {
                 System.err.println("T4-timeoutChecker: IOException:");
                 System.err.println(e);
             }
-            catch (NoSuchElementException e){
-                System.err.println("T4-timeoutChecker: NoSuchElementException:");
-                System.err.println(e);
-            }
+            // catch (NoSuchElementException e){
+            //     System.err.println("T4-timeoutChecker: NoSuchElementException:");
+            //     System.err.println(e);
+            //     throw e;
+            // }
             return; 
         }
     }
