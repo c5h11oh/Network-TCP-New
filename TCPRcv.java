@@ -514,6 +514,7 @@ public class TCPRcv{
             while( ! passiveConnect() ) {
                 // use a while loop to check true, if false, set remote sequence number to 0
                 //passiveConnect ++ remote seq num, but if connect not successful, the value should not be changed
+                System.out.println("fail to passice connect");
                 packetManager.setRemoteSequenceNumber(0);
             }
             
