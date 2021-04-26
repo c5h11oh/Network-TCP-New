@@ -176,7 +176,9 @@ public class TCPRcv{
                     System.err.println("In TCPRcv ByteRcvr: " + ioe);
                 }
 
-                Packet pkt = Packet.deserialize(b);
+                byte[] bb = new byte[p.getLength()];
+                System.arraycopy(b, 0, bb, 0, p.getLength());
+                Packet pkt = Packet.deserialize(bb);
                 if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
                     System.out.println("Corrupted data received. Drop.");
                     continue;
