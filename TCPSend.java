@@ -324,7 +324,9 @@ public class TCPSend {
                                     if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
 
                                     // remove received packets from queue
-                                    assert packetManager.getQueue().remove(p) == true;
+                                    if (packetManager.getQueue().remove(p) != true) {
+                                        throw new DebugException();
+                                    }
                                     packetManager.decrementInTransitPacket();
                                 }
                                 else if (p.packet.byteSeqNum == ACKnum){
