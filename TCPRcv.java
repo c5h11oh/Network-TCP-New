@@ -82,9 +82,12 @@ public class TCPRcv{
             
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(bb);
-            if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ return false;}
+            if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ 
+                System.out.println(" syn flag problem");
+                return  false;}
             if(! synPkt.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);
+                System.out.println("checksum problem");
                 return false;}
 
             //if valid syn, set remote sequence number as received (should be 0) 
@@ -106,12 +109,19 @@ public class TCPRcv{
             bb = new byte[a.getLength()];
             System.arraycopy(b, 0, bb, 0, bb.length);
             Packet aPkt = Packet.deserialize(bb);
-            if(!Packet.checkACK(aPkt)){ return false;}
-            if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { return false;}
+            if(!Packet.checkACK(aPkt)){ 
+                System.out.println(" receive ack flag problem");
+                return false;}
+            if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { 
+                System.out.println(" receive ack flag problem");
+                return false;}
             if(! synPkt.verifyChecksum()){ 
+                System.out.println(" receive ack checksum problem");
                 packetManager.getStatistics().incrementIncChecksum(1);
                 return false;}
-            if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){return false;}
+            if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){
+                System.out.println(" receive ack wrong ACK number problem");
+                return false;}
             packetManager.output(aPkt, "rcv");
 
 
