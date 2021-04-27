@@ -315,74 +315,76 @@ public class TCPSend {
                         packetManager.output(ACKpkt, "rcv");
                         int ACKnum = ACKpkt.ACK;
                        
-                        if (ACKnum == lastACKnum){ // must be a duplicate ACK
-                            System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The ACK packet is a duplicate ACK.");
-                            PacketWithInfo pp = null;
-                            for (PacketWithInfo p : packetManager.getQueue()) {
-                                if(p.packet.byteSeqNum == ACKnum){
-                                    pp = p;
-                                    p.ACKcount++;
-                                    packetManager.getStatistics().incrementDupACKCount();
-                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Found the duplicate ACK. Increment count.");
-                                    break;
-                                }
-                            }
-                            if (pp == null){
-                                System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": We think it is a duplicate ACK but we cannot find such packet in PM. Throw exception.");
-                                throw new DupACKPacketNotExistException();
-
-                            }
-                            
-                            // Check triple dup ACK?
-                            if (pp.ACKcount == 4) { // triple dup ACK
-                                System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. Resend packet.");
-                                dupACKResend(pp);                        
-                            }
-                        }
-                        else if (ACKnum > lastACKnum) { // May be a new ACK or a dup ACK, ACK number is not wrapped
-                            for(PacketWithInfo p : packetManager.getQueue()){
-                                if (p.packet.byteSeqNum < ACKnum){
-                                    // If seqNum+length==ACKnum -> update RTT, timeout
-                                    int ACKnumMatch = p.packet.byteSeqNum + p.packet.getDataLength();
-                                    if (ACKnumMatch < 0) { ACKnumMatch += Integer.MAX_VALUE; ACKnumMatch += 1; } // wrap
-                                    if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
-
-                                    // remove received packets from queue
-                                    if (packetManager.getQueue().remove(p) != true) {
-                                        throw new RuntimeException("assert problem");
-                                    }
-                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The packet p with sequence number" + p.packet.byteSeqNum + "should have been removed.") ;
-                                    packetManager.decrementInTransitPacket();
-
-                                }
-                                else if (p.packet.byteSeqNum == ACKnum){
-                                    packetManager.getStatistics().incrementDupACKCount();
-                                    if((++p.ACKcount) == 4) {
-                                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. (the second case). Resend packet.");
-                                        dupACKResend(p);
-                                        
+                        // get packetManager Lock
+                        synchronized(packetManager) {
+                            if (ACKnum == lastACKnum){ // must be a duplicate ACK
+                                System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The ACK packet is a duplicate ACK.");
+                                PacketWithInfo pp = null;
+                                for (PacketWithInfo p : packetManager.getQueue()) {
+                                    if(p.packet.byteSeqNum == ACKnum){
+                                        pp = p;
+                                        p.ACKcount++;
+                                        packetManager.getStatistics().incrementDupACKCount();
+                                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Found the duplicate ACK. Increment count.");
+                                        break;
                                     }
                                 }
+                                if (pp == null){
+                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": We think it is a duplicate ACK but we cannot find such packet in PM. Throw exception.");
+                                    throw new DupACKPacketNotExistException();
+    
+                                }
+                                
+                                // Check triple dup ACK?
+                                if (pp.ACKcount == 4) { // triple dup ACK
+                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. Resend packet.");
+                                    dupACKResend(pp);                        
+                                }
                             }
-                        }
-                        else { // May be a new ACK or a dup ACK, ACK number is wrapped
-                            for(PacketWithInfo p : packetManager.getQueue()){
-                                if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
-                                    //assert packetManager.getQueue().remove(p) == true;
-                                    if(!packetManager.getQueue().remove(p)){
-                                        throw new RuntimeException("assert problem");
+                            else if (ACKnum > lastACKnum) { // May be a new ACK or a dup ACK, ACK number is not wrapped
+                                for(PacketWithInfo p : packetManager.getQueue()){
+                                    if (p.packet.byteSeqNum < ACKnum){
+                                        // If seqNum+length==ACKnum -> update RTT, timeout
+                                        int ACKnumMatch = p.packet.byteSeqNum + p.packet.getDataLength();
+                                        if (ACKnumMatch < 0) { ACKnumMatch += Integer.MAX_VALUE; ACKnumMatch += 1; } // wrap
+                                        if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
+    
+                                        // remove received packets from queue
+                                        if (packetManager.getQueue().remove(p) != true) {
+                                            throw new RuntimeException("assert problem");
+                                        }
+                                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The packet p with sequence number" + p.packet.byteSeqNum + "should have been removed.") ;
+                                        packetManager.decrementInTransitPacket();
+    
                                     }
-                                    packetManager.decrementInTransitPacket();
+                                    else if (p.packet.byteSeqNum == ACKnum){
+                                        packetManager.getStatistics().incrementDupACKCount();
+                                        if((++p.ACKcount) == 4) {
+                                            System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. (the second case). Resend packet.");
+                                            dupACKResend(p);
+                                            
+                                        }
+                                    }
                                 }
-                                else if (p.packet.byteSeqNum == ACKnum){
-                                    packetManager.getStatistics().incrementDupACKCount();
-                                    if((++p.ACKcount) == 4) {
-                                        dupACKResend(p);
-                                    }                                
+                            }
+                            else { // May be a new ACK or a dup ACK, ACK number is wrapped
+                                for(PacketWithInfo p : packetManager.getQueue()){
+                                    if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
+                                        //assert packetManager.getQueue().remove(p) == true;
+                                        if(!packetManager.getQueue().remove(p)){
+                                            throw new RuntimeException("assert problem");
+                                        }
+                                        packetManager.decrementInTransitPacket();
+                                    }
+                                    else if (p.packet.byteSeqNum == ACKnum){
+                                        packetManager.getStatistics().incrementDupACKCount();
+                                        if((++p.ACKcount) == 4) {
+                                            dupACKResend(p);
+                                        }                                
+                                    }
                                 }
                             }
                         }
-
                         lastACKnum = ACKnum;
                     }
 
