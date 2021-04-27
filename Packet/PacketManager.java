@@ -281,9 +281,9 @@ public class PacketManager {
     public synchronized void decrementInTransitPacket() throws DebugException {
         inTransitPacket -= 1;
         System.out.println("Decremented inTransitPacket to " + inTransitPacket);
-        if ( inTransitPacket < 0 ) {
-            throw new DebugException();
-        }
+        // if ( inTransitPacket < 0 ) {
+        //     throw new DebugException();
+        // }
         this.notifyAll();
     }
     
