@@ -63,9 +63,8 @@ public class SenderBuffer extends Buffer {
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::waitForFreeSpace()" );
                 wait();
-            } catch (InterruptedException e) {
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::waitForFreeSpace()" );
-            }
+            } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::waitForFreeSpace()" );
         }
         if (fs <= 0) {
             throw new DebugException();
@@ -128,9 +127,8 @@ public class SenderBuffer extends Buffer {
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::getDataToSend()" );
                 wait();
-            } catch (InterruptedException e) {
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::getDataToSend()" );
-            }
+            } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::getDataToSend()" );
         }
         
         int byteToBeSent;

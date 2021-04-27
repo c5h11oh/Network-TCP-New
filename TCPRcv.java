@@ -181,6 +181,9 @@ public class TCPRcv{
         }
 
         //close 
+        try{
+            wait(50);
+        } catch (InterruptedException e) {}
         udpSocket.close();
         return true;
     }
@@ -209,10 +212,6 @@ public class TCPRcv{
                 byte[] bb = new byte[p.getLength()];
                 System.arraycopy(b, 0, bb, 0, p.getLength());
                 Packet pkt = Packet.deserialize(bb);
-                if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
-                    System.out.println("Corrupted data received. Drop.");
-                    continue;
-                }
 
                 packetManager.output(pkt, "rcv");
 
@@ -220,6 +219,11 @@ public class TCPRcv{
                     // Receive FIN. Go to closing connection state.
                     finPkt = pkt; 
                     break;
+                }
+
+                if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
+                    System.out.println("Corrupted data received. Drop.");
+                    continue;
                 }
                 
                 /** 
@@ -245,6 +249,8 @@ public class TCPRcv{
                 }
                 else if (continuousPackets.size() >= windowSize) {
                         // although new packet is in window range, continuousPackets has no space. do nothing.
+                    System.out.println(Thread.currentThread().getName() + ": continuousPackets is full. Drop received packet seq num " + pkt.byteSeqNum);
+                        
                 }
                 else {
                         // new packet is in window range. continuousPackets has space. put it in packetManager. update `continuousPackets` and `remoteSequenceNumber`.
@@ -303,7 +309,6 @@ public class TCPRcv{
                 else if ( pwi.packet.byteSeqNum > seqNumLookingFor ) {
                     // put back this discontinued PacketWithInfo in the front
                     pwiToBePutBack.add(pwi);
-                    break;
                 }
                 else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
                     // the next continuous PacketWithInfo. put it in continuousPackets' tail
@@ -378,9 +383,8 @@ public class TCPRcv{
                         try {
                             rcvBuffer.notifyAll(); 
                             rcvBuffer.wait();
-                        } catch (InterruptedException e) {
-                            continue; // start from top
-                        }
+                        } catch (InterruptedException e) {}
+                        continue; // start from top
                     }
                 
                     // there is space in rcvBuffer to put data
@@ -421,9 +425,8 @@ public class TCPRcv{
                         try {
                             rcvBuffer.notifyAll();
                             rcvBuffer.wait();
-                        } catch (InterruptedException e) {
-                            continue; // start from top
-                        }
+                        } catch (InterruptedException e) {}
+                        continue; // start from top
                     }
                     else {
                         try {
@@ -450,17 +453,18 @@ public class TCPRcv{
             // Note that it is because we only have one putter (thread 2) and one getter (thread 3) so that we can use a single lock (rcvBuffer) to control.
             while ( rcvBuffer.getNoMoreNewByte() == false ) {
                 byte[] b = rcvBuffer.waitAndGetData();
-
-                // there is data. write all data into the file
-                try {
-                    fileOstream.write(b);
-                } catch (IOException e) {
-                    System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
-                    System.exit(1);
+                if (b != null) {
+                    // there is data. write all data into the file
+                    try {
+                        fileOstream.write(b);
+                    } catch (IOException e) {
+                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                        System.exit(1);
+                    }
                 }
 
                 // notify thread 2 that rcvBuffer is now empty
-                rcvBuffer.notifyAll();
+                rcvBuffer.notifyAllWrapper();
             }
 
             // The buffer may contain last piece of data (or not)
