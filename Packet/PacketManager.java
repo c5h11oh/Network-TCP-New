@@ -104,7 +104,7 @@ public class PacketManager {
         this.allPacketsEnqueued = true;
     }
 
-    public boolean isAllPacketsEnqueued(){
+    public synchronized boolean isAllPacketsEnqueued(){
         return this.allPacketsEnqueued;
     }
 
@@ -290,7 +290,7 @@ public class PacketManager {
     Sender T3: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
-    public void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
+    public synchronized void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
                 //if unexpired pkt found 
@@ -298,6 +298,8 @@ public class PacketManager {
         //end while, another while loop to check until queue empty 
 
         while( !allPacketsEnqueued){
+
+            
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
                 synchronized(this) {
@@ -334,7 +336,7 @@ public class PacketManager {
     /**
      * Sender T3: Checking timeout. Only called by checkExpire()
      */
-    private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
+    private void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
 
         PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
         
