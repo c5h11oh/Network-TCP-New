@@ -340,7 +340,7 @@ public class TCPSend {
                                 System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The ACK packet is a duplicate ACK.");
                                 PacketWithInfo pp = null;
                                 for (PacketWithInfo p : packetManager.getQueue()) {
-                                    if(p.packet.byteSeqNum + p.packet.getDataLength() == ACKnum){
+                                    if(p.packet.byteSeqNum == ACKnum){
                                         pp = p;
                                         p.ACKcount++;
                                         packetManager.getStatistics().incrementDupACKCount();
