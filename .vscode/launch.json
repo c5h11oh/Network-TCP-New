@@ -15,7 +15,7 @@
             "name": "Launch TCPEnd as Sender",
             "request": "launch",
             "mainClass": "TCPEnd",
-            "args": ["-p", "2356", "-s", "10.141.42.223", "-a", "2357", "-f", "${workspaceFolder}/FilesToBeSend/16k.docx", "-m", "1400", "-c", "30"],
+            "args": ["-p", "2356", "-s", "192.168.0.102", "-a", "2357", "-f", "${workspaceFolder}/FilesToBeSend/OPT.xlsx", "-m", "1400", "-c", "30"],
             "vmArgs": "-ea"
         },
         {

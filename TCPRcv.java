@@ -209,10 +209,6 @@ public class TCPRcv{
                 byte[] bb = new byte[p.getLength()];
                 System.arraycopy(b, 0, bb, 0, p.getLength());
                 Packet pkt = Packet.deserialize(bb);
-                if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
-                    System.out.println("Corrupted data received. Drop.");
-                    continue;
-                }
 
                 packetManager.output(pkt, "rcv");
 
@@ -220,6 +216,11 @@ public class TCPRcv{
                     // Receive FIN. Go to closing connection state.
                     finPkt = pkt; 
                     break;
+                }
+
+                if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
+                    System.out.println("Corrupted data received. Drop.");
+                    continue;
                 }
                 
                 /** 

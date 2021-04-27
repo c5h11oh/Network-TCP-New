@@ -248,7 +248,7 @@ public class TCPSend {
             
                 // All buffered data has been stored as Packet in PacketManager. Set flag.
                 packetManager.setAllPacketsEnqueued();
-                lastACKExpected = lastPkt.getByteSeqNum() + lastPkt.getDataLength() +1 ;
+                lastACKExpected = lastPkt.getByteSeqNum() + lastPkt.getDataLength();
 
                 //when all data are sent, we can send FIN when the lastACKExpected received 
 
@@ -393,7 +393,7 @@ public class TCPSend {
 
                 
                 if( lastACKnum != lastACKExpected){
-                    System.out.println(" inconsistent ACK before close");
+                    System.out.println(" inconsistent ACK before close" + "  lastACKExpected = " + lastACKExpected);
                     System.exit(1);
                 }
 
