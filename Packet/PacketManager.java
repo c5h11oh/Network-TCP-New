@@ -208,14 +208,13 @@ public class PacketManager {
             pwi.sent = true;
 
             if (isNewData == true) {
-                System.out.println("Increment inTransitPacket");
                 ++inTransitPacket;
             }
             if (inTransitPacket > windowSize) {
                 throw new DebugException();
             }
         } catch (IOException e) {
-            System.err.println(Thread.currentThread() + ": " + getClass().getName() + "::senderSendUDP IOException when sending packet with seq number " + pwi.packet.byteSeqNum + ". Will skip this send and continue. Exception info: " + e);
+            // System.err.println(Thread.currentThread() + ": " + getClass().getName() + "::senderSendUDP IOException when sending packet with seq number " + pwi.packet.byteSeqNum + ". Will skip this send and continue. Exception info: " + e);
         }
 
         notifyAll();
@@ -235,13 +234,9 @@ public class PacketManager {
         while (vacancy == 0) {
             notifyAll();
             try {
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::trySendNewData()" );
                 wait();
             } catch (InterruptedException e) {}
-            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::trySendNewData()" );
-            // System.out.println("Thread: " + Thread.currentThread().getName() + ": before recalculate, vacancy = " + vacancy + ". (should be 0)");
             vacancy = windowSize - inTransitPacket;
-            // System.out.println("Thread: " + Thread.currentThread().getName() + ": after recalculate, vacancy = " + vacancy + ".");
         }
 
         for(PacketWithInfo p : this.queue) {
@@ -280,10 +275,6 @@ public class PacketManager {
      */
     public synchronized void decrementInTransitPacket() throws DebugException {
         inTransitPacket -= 1;
-        System.out.println("Decremented inTransitPacket to " + inTransitPacket);
-        // if ( inTransitPacket < 0 ) {
-        //     throw new DebugException();
-        // }
         this.notifyAll();
     }
     
@@ -297,37 +288,28 @@ public class PacketManager {
                 //if unexpired pkt found 
             //if queue empty, sleep until sender buffer put() notify 
         //end while, another while loop to check until queue empty 
-        int debugCounter = 0;
         while( !allPacketsEnqueued){
-            // DEBUG
-            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): running checkExpire while loop");
-            
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
                 try{
                     synchronized(this) {
                         notifyAll();
-                        System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): queue is empty, going to sleep");
                         wait();
                     }    
                 } catch (InterruptedException e) {}
-                System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): being awake");
             }
 
             if (this.queue.isEmpty()) {
-                System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): queue is still empty. comtinue.");
                 continue;
             }
 
             //check packets and retransmit until find unexpired packets 
             //wait one timeout unit if unexpired found 
-            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): Going into helper (1)");
             helperCheckExpire(udpSocket, remotePort, remoteIp);
         }
         
         // no more new packet will be put in queue. Deal with remaining packets in queue.
         while( !this.queue.isEmpty()){
-            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): Going into helper (2)");
             helperCheckExpire(udpSocket, remotePort, remoteIp);
         }
         return ; 
@@ -339,7 +321,6 @@ public class PacketManager {
      */
     private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
         
-        System.err.println(Thread.currentThread() + ": helperCheckExpire(): start");
         PacketWithInfo head = this.queue.peek(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
         if (head == null) {
             return;
@@ -348,14 +329,12 @@ public class PacketManager {
         long timeRemain = ((head.timeOut + head.packet.timeStamp) - System.nanoTime()) / 1000000; // in ms
         // check if the frontmost packet is timeout. If so, poll such timeout packet, make a "resend packet" from it, send such "resend packet", and put "resend packet" into the packetManager. If not, wait until the 
         if( timeRemain <= 0 ){ // timeout. retransmit the packet.
-            System.err.println(Thread.currentThread() + ": helperCheckExpire(): timeRemain < 0");
             // remove timeout packet
             this.queue.remove(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
             
             PacketWithInfo head2 = head.getResendPacketWithInfo(this.remoteSequenceNumber);
             // add the packet back to the manager 
             queue.add(head2); 
-            System.err.println(Thread.currentThread() + ": helperCheckExpire(): timeout packet is put back to the queue.");
             
             // send UDP
             try {
@@ -370,22 +349,6 @@ public class PacketManager {
             this.getStatistics().incrementRetransCount();
 
         }
-        // else{
-        //     // the current packet not timeout 
-        //     // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
-        //     // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
-            
-        //         notifyAll();
-            
-        //     try{
-        //         // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
-        //         wait(); 
-        //     } catch (InterruptedException e) {}
-        //     // catch(IllegalMonitorStateException e2){}
-        
-        //     // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
-
-        // }
     }
 
     /*********************************************************************/

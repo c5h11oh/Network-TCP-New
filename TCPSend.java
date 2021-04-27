@@ -4,12 +4,10 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.file.*;
-import java.util.NoSuchElementException;
 import java.io.*;
 
 import Timeout.*;
 import Packet.*;
-import Timeout.*;
 import Buffer.*;
 import Exceptions.*;
 import Statistics.Statistics;
@@ -309,25 +307,19 @@ public class TCPSend {
                  */
                 int lastACKnum = 0; // If the new received ACK# is smaller than `lastACKnum`, it may imply a sequence number wrap has occured.
                 
-                long debugCounter = 0;
-
                 while( !packetManager.isAllPacketsEnqueued() || !packetManager.getQueue().isEmpty() ){
                     if(packetManager.getQueue().isEmpty()){
                         // No packet waiting for an ACK. Yield.
-                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": PM is empty. yield.");
                         Thread.yield();
                     }
                     else{
                         ACKpktSerial.setLength(b.length);
-                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Listen to udpSocket.");
                         try{
                             udpSocket.receive(ACKpktSerial);
                         } catch (IOException e) {
-                            System.err.println(Thread.currentThread() + ": " + getClass().getName() + "::run() IOException when trying to receive ACK. Will start over (continue). Exception info: " + e);
                             continue;
                         }
                         
-                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Got an ACK packet.");
                         byte[] bb = new byte[ACKpktSerial.getLength()];
                         System.arraycopy(b, 0, bb, 0, ACKpktSerial.getLength());
                         Packet ACKpkt = Packet.deserialize(bb);
@@ -337,26 +329,22 @@ public class TCPSend {
                         // get packetManager Lock
                         synchronized(packetManager) {
                             if (ACKnum == lastACKnum){ // must be a duplicate ACK
-                                System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The ACK packet is a duplicate ACK.");
                                 PacketWithInfo pp = null;
                                 for (PacketWithInfo p : packetManager.getQueue()) {
                                     if(p.packet.byteSeqNum == ACKnum){
                                         pp = p;
                                         p.ACKcount++;
                                         packetManager.getStatistics().incrementDupACKCount();
-                                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Found the duplicate ACK. Increment count.");
                                         break;
                                     }
                                 }
                                 if (pp == null){
-                                    System.err.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": We think it is a duplicate ACK but we cannot find such packet in PM. Throw exception.");
                                     throw new DupACKPacketNotExistException();
     
                                 }
                                 
                                 // Check triple dup ACK?
                                 if (pp.ACKcount == 4) { // triple dup ACK
-                                    System.err.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. Resend packet.");
                                     dupACKResend(pp);                        
                                 }
                             }
@@ -373,7 +361,6 @@ public class TCPSend {
                                         if (packetManager.getQueue().remove(p) != true) {
                                             throw new RuntimeException("TCPSend::ACKReceiver: fail to remove received packet from packetManager queue. (1. ACK num not wrapped)");
                                         }
-                                        System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The packet p with sequence number" + p.packet.byteSeqNum + "should have been removed.") ;
                                         if (prevPktSeqNum != p.packet.byteSeqNum)
                                             packetManager.decrementInTransitPacket();
     
@@ -381,7 +368,6 @@ public class TCPSend {
                                     else if (p.packet.byteSeqNum == ACKnum){
                                         packetManager.getStatistics().incrementDupACKCount();
                                         if((++p.ACKcount) == 4) {
-                                            System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. (the second case). Resend packet.");
                                             dupACKResend(p);
                                             
                                         }
@@ -389,9 +375,6 @@ public class TCPSend {
                                 }
                             }
                             else { // May be a new ACK or a dup ACK, ACK number is wrapped
-                                System.err.println(Thread.currentThread() + ": The ACK number wrapped! Exitting...");
-                                System.exit(1);
-                                // TODO: remove such exit
                                 for(PacketWithInfo p : packetManager.getQueue()){
                                     if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum > lastACKnum){
                                         //assert packetManager.getQueue().remove(p) == true;
@@ -414,8 +397,6 @@ public class TCPSend {
                         }
                         lastACKnum = ACKnum;
                     }
-
-                    debugCounter++;
                 }
 
                 
@@ -436,8 +417,6 @@ public class TCPSend {
                 for ( StackTraceElement element : e.getStackTrace() )
                     System.err.println(element);
                 System.exit(-1);
-                // throw new RuntimeException("Debug Exception");
-                // TODO: come to here once
             }
             catch (DupACKPacketNotExistException e) {
                 System.err.println(e);
@@ -480,13 +459,6 @@ public class TCPSend {
                 e.printStackTrace();
                 throw new RuntimeException();
             }
-            // catch (NoSuchElementException e){
-            //     System.err.println("T4-timeoutChecker: NoSuchElementException:");
-            //     System.err.println(e);
-            //     throw e;
-            // }
-            System.out.println("T3 is exiting...");
-
             return; 
         }
     }

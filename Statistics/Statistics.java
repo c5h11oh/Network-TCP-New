@@ -3,9 +3,7 @@ package Statistics;
 public class Statistics {
     // Both Sender and Receiver should maintain
     public int amountOfValidData = 0; // in byte
-    //TODO: only in count in receiver so far 
     public int amountOfPacket = 0; // in packet
-    //TODO: should only maintained by sender bc we want to also count retransmitted pkt? 
 
     // Receiver should maintain
     public int amountOfOutOfSeqDiscard = 0; // in packet

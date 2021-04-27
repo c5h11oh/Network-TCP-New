@@ -3,8 +3,6 @@ package Packet;
 import java.nio.*;
 import java.util.Arrays;
 
-import Exceptions.DebugException;
-
 public class Packet {
     public int byteSeqNum;
     public int ACK;

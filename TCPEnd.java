@@ -6,35 +6,7 @@ public class TCPEnd {
     public static void main(String args[]) throws Exception {
         long initTime = System.currentTimeMillis();
 
-        if (args.length == 2) {
-            // Only for testing. Delete this before submittal
-            for (int i = 0; i < args.length; ++i) {
-                if ( args[i].equals("-t") ) {
-                    ++i;
-                    switch (args[i]) {
-                        case "sender":
-                            TCPSend send = new TCPSend(2608, InetAddress.getLocalHost(), 2806, "FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30,initTime);
-                            send.work(); // fake input
-                            System.out.println( send.getStatisticsString() );
-                            System.exit(0);
-                            break;
-                        case "receiver":
-                            TCPRcv rcv = new TCPRcv(2806, 1400, 30, "receive.pdf", initTime);
-                            rcv.work();
-                            // System.out.println( rcv.getStatisticsString() );
-                            System.exit(0);
-                            break;
-                        default:
-                            Invalid("failed to parse");
-                            break;
-                    }
-                }
-                else {
-                    Invalid("wrong option: " + args[i]);
-                }
-            }
-        }
-        else if (args.length == 8) {
+        if (args.length == 8) {
             // Receiver
             int port = -1;
             int mtu = -1;
@@ -130,19 +102,6 @@ public class TCPEnd {
         else {
             Invalid("wrong number of argument(s)");
         }
-
-        // if(command == 1) {
-        //     TCPSend send = new TCPSend(2608, InetAddress.getLocalHost(), 2806, "FilesToBeSend/gdb-tutorial-handout.pdf", 1400, 30);
-        //     send.work(); // fake input
-        //     System.out.println( send.getStatisticsString() );
-        //     System.exit(0);
-        // }
-        // else if (command == 2){
-        //     TCPRcv rcv = new TCPRcv(2806, 1400, 30, "receive.pdf");
-        //     rcv.work();
-        //     System.out.println( rcv.getStatisticsString() );
-        //     System.exit(0);
-        // }
         
     }
 

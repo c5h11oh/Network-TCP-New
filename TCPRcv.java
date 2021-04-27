@@ -83,7 +83,6 @@ public class TCPRcv{
             
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(bb);
-            System.out.println("synPkt timestamp: " + synPkt.timeStamp);
             if(! synPkt.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);
                 System.out.println("checksum problem");
@@ -116,7 +115,6 @@ public class TCPRcv{
 
             //reply with SYN and ACK and incr loacl sequence number by 1 
             Packet sap = makeSAPacket(packetManager, synPkt); 
-            System.out.println("sap timestamp: " + sap.timeStamp);
             packetManager.receiverSendUDP(sap, udpSocket,  senderPort, senderIp);
             packetManager.setLocalSequenceNumber(1);
 
@@ -150,21 +148,21 @@ public class TCPRcv{
                     ackReceived = true; 
             }
             if(dropCount ==0){
-                System.out.println("cannot receive ACK for 16 times");
+                // System.out.println("cannot receive ACK for 16 times");
                 return true;  //doesn't matter 
             }
             
             
             
             if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){
-                System.out.println(" receive ack wrong ACK number problem");
+                // System.out.println(" receive ack wrong ACK number problem");
                 return false;}
             packetManager.output(aPkt, "rcv");
 
 
         
         }catch(IOException ioe){
-            System.err.println("Receiver fails to establish connection: " + ioe);
+            // System.err.println("Receiver fails to establish connection: " + ioe);
             return false;
         }
 
@@ -211,13 +209,13 @@ public class TCPRcv{
             return false;}
         if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
         if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){
-            System.out.println("!");
+            // System.out.println("!");
             return false;}
         packetManager.output(a2, "rcv");
 
 
         }catch(IOException ioe){
-            System.err.println("receiver passive close fails: " + ioe);
+            // System.err.println("receiver passive close fails: " + ioe);
             return false; 
         }
 
@@ -226,7 +224,7 @@ public class TCPRcv{
             wait(50);
         } catch (InterruptedException e) {}
         catch(IllegalMonitorStateException e2){}
-        System.out.println("rcvr close");
+        // System.out.println("rcvr close");
         udpSocket.close();
         return true;
     }
@@ -265,7 +263,7 @@ public class TCPRcv{
                 }
 
                 if (!checkValidDataPacket(pkt, packetManager.getStatistics())) {
-                    System.out.println("Corrupted data received. Drop.");
+                    // System.out.println("Corrupted data received. Drop.");
                     continue;
                 }
                 
@@ -292,7 +290,7 @@ public class TCPRcv{
                 }
                 else if (continuousPackets.size() >= windowSize) {
                         // although new packet is in window range, continuousPackets has no space. do nothing.
-                    System.out.println(Thread.currentThread().getName() + ": continuousPackets is full. Drop received packet seq num " + pkt.byteSeqNum);
+                    // System.out.println(Thread.currentThread().getName() + ": continuousPackets is full. Drop received packet seq num " + pkt.byteSeqNum);
                         
                 }
                 else {
@@ -308,11 +306,8 @@ public class TCPRcv{
                     packetManager.receiverSendUDP(ackPckt, udpSocket, senderPort, senderIp);
                 }catch( IOException ioe){
                     System.out.println("In TCPRcv ByteRcvr thread: fail to send ACK reply when new packet received: " + ioe);
-                    System.exit(1);
+                    throw new RuntimeException();
                 }
-                
-                // DEBUG
-                System.out.println("packetManager size: " + packetManager.getQueue().size()+ "\tcontinuiusPackets size: " + continuousPackets.size());
             } // end of while(true) 
             
 
@@ -327,10 +322,10 @@ public class TCPRcv{
                 if(! passiveClose(finPkt)){
                     System.out.println("passive close returns false");
                 }
-              }catch (DebugException de){
+            }catch (DebugException de){
                 System.err.print(de);
                 throw new RuntimeException(de.toString());
-              }
+            }
             
 
 
@@ -537,9 +532,7 @@ public class TCPRcv{
     private boolean checkValidDataPacket( Packet pkt, Statistics stat){
         if( Packet.checkSYN(pkt)) return false; // Thread 1 has to handle FIN
         if( !Packet.checkACK(pkt)) return false; 
-        // if(pkt.getACK() != this.packetManager.getLocalSequenceNumber() +1 ) return false; 
-        // TODO: ^ What does this line do? Can we accept that sender does not receive our ACK? Or do you mean that pkt.getACK() should always be 1?
-        //sohuld always be 1 before FIN? I think this line is not necessary beside debugging purpose 
+        //should always be 1 before FIN? I think this line is not necessary beside debugging purpose 
         if(pkt.verifyChecksum()){
             return true; 
         }else{
@@ -578,7 +571,7 @@ public class TCPRcv{
             while( ! passiveConnect() ) {
                 // use a while loop to check true, if false, set remote sequence number to 0
                 //passiveConnect ++ remote seq num, but if connect not successful, the value should not be changed
-                System.out.println("fail to passice connect");
+                // System.out.println("fail to passice connect");
                 packetManager.setRemoteSequenceNumber(0);
             }
             
