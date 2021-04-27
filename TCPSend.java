@@ -117,7 +117,7 @@ public class TCPSend {
             byte[] r1 = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
             DatagramPacket dgR1 = new DatagramPacket(r1, r1.length); // datagram of r
             byte[] r2 = new byte[maxDatagramPacketLength];
-            DatagramPacket dgR2 = new DatagramPacket(r1, r1.length); // datagram of r
+            DatagramPacket dgR2 = new DatagramPacket(r2, r1.length); // datagram of r
 
             udpSocket.send(udpFin);
             packetManager.output(f, "snd");
@@ -150,7 +150,7 @@ public class TCPSend {
             if (madeIt == false){ 
                 System.out.println("not make it");
                 return false;}
-            
+            packetManager.increaseRemoteSequenceNumber(1); //FIN counts for 1 
             // int finACK = pkt2.getByteSeqNum(); 
 
             //reply ACK

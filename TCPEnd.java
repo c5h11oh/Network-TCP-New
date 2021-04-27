@@ -72,7 +72,7 @@ public class TCPEnd {
 
             TCPRcv rcv = new TCPRcv(port, mtu, sws, fileName, initTime);
             rcv.work();
-            // System.out.println( rcv.getStatisticsString() );
+            System.out.println( rcv.getStatisticsString() );
             System.exit(0);
         }
         else if (args.length == 12) {

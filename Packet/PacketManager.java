@@ -353,6 +353,8 @@ public class PacketManager {
             // send UDP
             try {
                 senderSendUDP(false, head2, udpSocket, remotePort, remoteIp); // May throw IOException
+                
+
             } catch (ExceedWindowSizeException e) {
                 System.err.println("PacketManager: helperCheckExpire: abnormal: " + e);
                 System.exit(1);
@@ -364,11 +366,14 @@ public class PacketManager {
             // the current packet not timeout 
             // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
             // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
-            notifyAll();
+            synchronized(this){
+                notifyAll();
+            
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
                 wait(); 
             } catch (InterruptedException e) {}
+        }
             // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
 
         }
