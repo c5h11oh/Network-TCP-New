@@ -124,11 +124,12 @@ public class TCPRcv{
                         udpSocket.receive(a);
                         dropCount--;
                         continue;
-                    }else{
+                     }else{
                         return false; 
                     }
                     
-                    ackReceived = true; }
+                    }
+                    ackReceived = true; 
             }
             if(dropCount ==0){
                 System.out.println("cannot receive ACK for 16 times");
