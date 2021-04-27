@@ -43,28 +43,32 @@ public class SenderBuffer extends Buffer {
 
     private synchronized int checkFreeSpace(){ // `lastByteACK` is NOT free
         int nextByteExpected = (lastByteWritten + 1) % bufferSize;
-        if (nextByteExpected == lastByteACK) {
+        if (nextByteExpected == lastByteSent) {
             return 0;
             
         }
-        else if (nextByteExpected > lastByteACK) { // not wrapped
-            return bufferSize - (nextByteExpected - lastByteACK);
+        else if (nextByteExpected > lastByteSent) { // not wrapped
+            return bufferSize - (nextByteExpected - lastByteSent);
         }
         else{   // wrapped
-            return (lastByteACK - nextByteExpected);
+            return (lastByteSent - nextByteExpected);
         }
     }
 
-    public synchronized int waitForFreeSpace(){
+    public synchronized int waitForFreeSpace() throws DebugException{
         int fs; 
         while((fs = this.checkFreeSpace()) == 0){
             full = true;
             notifyAll();
             try{
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::waitForFreeSpace()" );
                 wait();
             } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::waitForFreeSpace()" );
         }
-        assert fs > 0;
+        if (fs <= 0) {
+            throw new DebugException();
+        }
         
         return fs;
     }
@@ -101,7 +105,7 @@ public class SenderBuffer extends Buffer {
         }
     }
 
-    /*
+    /**
      * Get [lastByteSent + 1, lastByteSent + 1 + length) data from buffer.
      * Advance `lastByteSent` by length.
      * Note this get function DOES advance the lastByteSent pointer, which is different 
@@ -121,14 +125,14 @@ public class SenderBuffer extends Buffer {
             // The app still has data wishes to send. Notify it 
             notifyAll();
             try{
+                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::getDataToSend()" );
                 wait();
             } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::getDataToSend()" );
         }
         
         int byteToBeSent;
-        boolean wrapped = (lastByteWritten > lastByteSent);//??seem like this boolean is true if not wrapped 
-
-       
+        boolean wrapped = !(lastByteWritten > lastByteSent);
 
         if (!wrapped) { // Not wrapped
             byteToBeSent = Math.min(length, lastByteWritten - lastByteSent);
@@ -136,6 +140,8 @@ public class SenderBuffer extends Buffer {
         else { // wrapped
             byteToBeSent = Math.min(length, lastByteWritten + bufferSize - lastByteSent);
         }
+
+        wrapped = (lastByteSent + byteToBeSent) >= (bufferSize);
         
         byte[] returnData = new byte[byteToBeSent];
         if(!wrapped) {
@@ -149,14 +155,14 @@ public class SenderBuffer extends Buffer {
             lastByteSent = byteToBeSent - endByteCount - 1;
         }
         
-        AssertValidSentPointer();
+        //AssertValidSentPointer();
         this.full = false;
         notifyAll();
 
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    /*
+    /**
     This function checks how many bytes of data are ready to be sent to packet manager 
     */    
     public synchronized int getAvailableDataSize(){

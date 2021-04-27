@@ -9,10 +9,11 @@ public class ReceiverBuffer extends Buffer {
     /* "Pointers" that are indices of the buffer. Check validility by AssertValidPointers() */
     private int lastByteRead;
     private int nextByteExpected;
+    private boolean noMoreNewByte;
     // private int lastByteRcvd;
 
-    /* Indicators of thread `DataReceiver` has retrieved all data and put in buffer */
-    private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer.
+    /* obsolete */
+    // private boolean allDataReceived = false;     // If set, `DataReceiver` has put all data into buffer
     
     public ReceiverBuffer(int bufferSize, int mtu, int windowSize) throws BufferSizeException {
         super(++bufferSize, mtu, windowSize); // We add one additional byte to avoid ambiguity when wrapping.
@@ -30,12 +31,17 @@ public class ReceiverBuffer extends Buffer {
         return this.nextByteExpected;
     }
 
-    // public int getLastByteRcvd(){
-    //     return this.lastByteRcvd;
-    // }
+    public boolean getNoMoreNewByte() {
+        return this.noMoreNewByte;
+    }
 
-    public boolean isAllDataReceived(){
-        return allDataReceived;
+    public synchronized void notifyAllWrapper(){
+        this.notifyAll();
+    }
+
+    public synchronized void setNoMoreNewByteToTrue() {
+        this.noMoreNewByte = true;
+        notifyAll();
     }
 
     public int checkFreeSpace(){ // `lastByteRead` is NOT free
@@ -50,11 +56,11 @@ public class ReceiverBuffer extends Buffer {
         }
     }
 
-    /* Design: You can only put contiguous data in the buffer. All non-contiguous data are 
+    /* Design: You can only put continuous data in the buffer. All non-continuous data are 
      * stored in and managed by PacketManager as packets. Therefore, ReceiverBuffer does not 
      * need to maintain lastByteRcvd.
      */
-    public void put(byte[] data) throws BufferInsufficientSpaceException{
+    public synchronized void put(byte[] data) throws BufferInsufficientSpaceException{
         if (data.length == 0) return;
         
         if (checkFreeSpace() < data.length) throw new BufferInsufficientSpaceException();
@@ -75,32 +81,24 @@ public class ReceiverBuffer extends Buffer {
         this.notifyAll();
     }
 
-    public void put(byte[] data, boolean finish) 
-                 throws BufferInsufficientSpaceException{
-        put(data);
-        if(finish){
-            this.allDataReceived = true;
-        }
-    }
-
     /*
      * Get as much data as possible.
      */
-    public byte[] getData() throws InvalidPointerException {
-        int lastContiguousByte = (nextByteExpected == 0) ? (bufferSize - 1) : (nextByteExpected - 1);
-        if (lastByteRead == lastContiguousByte) { 
+    public synchronized byte[] getData() {
+        int lastContinuousByte = (nextByteExpected == 0) ? (bufferSize - 1) : (nextByteExpected - 1);
+        if (lastByteRead == lastContinuousByte) { 
             // No more data
             return null;
         }
         
         int dataLength;
-        boolean wrapped = lastByteRead > lastContiguousByte;
+        boolean wrapped = lastByteRead > lastContinuousByte;
 
         if (!wrapped) { // Not wrapped
-            dataLength = lastContiguousByte - lastByteRead;
+            dataLength = lastContinuousByte - lastByteRead;
         }
         else { // wrapped
-            dataLength = lastContiguousByte + bufferSize - lastByteRead;
+            dataLength = bufferSize - lastByteRead + lastContinuousByte;
         }
         
         byte[] returnData = new byte[dataLength];
@@ -109,19 +107,30 @@ public class ReceiverBuffer extends Buffer {
             lastByteRead += dataLength;
         }
         else {
-            int endByteCount = bufferSize - lastContiguousByte - 1;
-            System.arraycopy(this.buf, lastByteRead + 1, returnData, 0, endByteCount);
+            int nextByteToBeRead = (lastByteRead + 1) % bufferSize;
+            int endByteCount = bufferSize - lastByteRead - 1;
+            System.arraycopy(this.buf, nextByteToBeRead, returnData, 0, endByteCount);
             System.arraycopy(this.buf, 0, returnData, endByteCount, dataLength - endByteCount);
             lastByteRead = dataLength - endByteCount - 1;
         }
-        assert lastByteRead == lastContiguousByte;
+        if (lastByteRead != lastContinuousByte) {
+            throw new RuntimeException();
+        }
         return returnData; // Caller needs to confirm the return length. May not be `length`.
     }
 
-    // Seems I cannot check if the pointer is valid. Every position has its meaning.
-    // private void AssertValidPointers() throws InvalidPointerException{
-    //     if (lastByteRead >= nextByteExpected /* || nextByteExpected > lastByteRcvd + 1 */ ) {
-    //         throw new InvalidPointerException();
-    //     }
-    // }
+    public synchronized byte[] waitAndGetData() {
+        byte[] b = this.getData();
+                    
+        // if there is no data, wait(). when wake up, go back to start of while loop.
+        while (b == null && this.noMoreNewByte == false) {
+            this.notifyAll();
+            try{
+                this.wait();
+            } catch (InterruptedException e) {}
+            b = this.getData();
+        }
+
+        return b;
+    }
 }

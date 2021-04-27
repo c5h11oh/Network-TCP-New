@@ -3,6 +3,8 @@ package Packet;
 import java.nio.*;
 import java.util.Arrays;
 
+import Exceptions.DebugException;
+
 public class Packet {
     public int byteSeqNum;
     public int ACK;
@@ -53,7 +55,7 @@ public class Packet {
         return resultByteArray;
     }
 
-    public static Packet deserialize(byte[] raw){
+    public static Packet deserialize(byte[] raw) {
         Packet resultPacket = new Packet();
         ByteBuffer bb = ByteBuffer.wrap(raw);
         resultPacket.byteSeqNum = bb.getInt();
@@ -64,7 +66,9 @@ public class Packet {
         if (bb.hasRemaining()){
             resultPacket.data = new byte[bb.remaining()];
             bb.get(resultPacket.data);
-            assert bb.remaining() == 0;
+            if (bb.remaining() != 0) {
+                throw new RuntimeException();
+            }
         }
         return resultPacket;
     }
@@ -172,7 +176,15 @@ public class Packet {
     }
 
     public int getDataLength(){
-        return this.data.length;
+        if(this.data == null){
+            return 0;
+        }else{
+            return this.data.length;
+        }
+    }
+
+    public byte[] getData() {
+        return this.data;
     }
 
     

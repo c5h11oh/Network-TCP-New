@@ -1,7 +1,5 @@
 package Timeout;
-
 import Packet.Packet;
-
 public class Timeout {
     /**
      * All timeouts are in nanoseconds.
@@ -25,6 +23,7 @@ public class Timeout {
         this.timeout = initTimeout;
         this.estRTT = initTimeout / 2;
         this.estDEV = 0;
+        System.out.println("Timeout: initially" + this.timeout/1000000 + "milliseconds.");
     }
     
     public long getTimeout(){
@@ -45,6 +44,7 @@ public class Timeout {
             estRTT = System.nanoTime() - packet.getTimeStamp();
             estDEV = 0;
             timeout = 2 * estRTT;
+            System.out.println("Timeout: first update");
         }
         else{
             long sampleRTT = System.nanoTime() - packet.getTimeStamp();
@@ -53,6 +53,7 @@ public class Timeout {
             estDEV = (long)(b * estDEV + (1-b) * sampleDEV);
             timeout = estRTT + 4 * estDEV;
         }
+        System.out.println("Timeout: updated timeout: " + this.timeout / 1000000 + "milliseconds.");
     }
 
 }
