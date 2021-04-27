@@ -303,14 +303,15 @@ public class PacketManager {
             
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
-                synchronized(this) {
+                try{
                     notifyAll();
-                    try{
+                    
                         // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
                         wait();
                     } catch (InterruptedException e) {}
+                    catch(IllegalMonitorStateException e2){}
                     // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
-                }
+                
             }
 
             if (this.queue.isEmpty()) {
@@ -367,14 +368,15 @@ public class PacketManager {
             // the current packet not timeout 
             // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
             // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
-            synchronized(this){
+            
                 notifyAll();
             
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
                 wait(); 
             } catch (InterruptedException e) {}
-        }
+            catch(IllegalMonitorStateException e2){}
+        
             // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
 
         }
