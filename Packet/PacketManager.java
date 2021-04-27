@@ -338,8 +338,12 @@ public class PacketManager {
      * Sender T3: Checking timeout. Only called by checkExpire()
      */
     private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
+        
         System.err.println(Thread.currentThread() + ": helperCheckExpire(): start");
-        PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
+        PacketWithInfo head = this.queue.peek(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
+        if (head == null) {
+            return;
+        }
         
         long timeRemain = ((head.timeOut + head.packet.timeStamp) - System.nanoTime()) / 1000000; // in ms
         // check if the frontmost packet is timeout. If so, poll such timeout packet, make a "resend packet" from it, send such "resend packet", and put "resend packet" into the packetManager. If not, wait until the 
