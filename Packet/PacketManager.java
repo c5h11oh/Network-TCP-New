@@ -188,7 +188,7 @@ public class PacketManager {
      * @param remoteIp
      * @throws IOException
      */
-    private synchronized void senderSendUDP( boolean isNewData, PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, ExceedWindowSizeException, DebugException {
+    private synchronized void senderSendUDP( boolean isNewData, PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws ExceedWindowSizeException, DebugException {
         // need to check if we will exceed window size if this is new data packet
         if((isNewData == true) && (inTransitPacket == windowSize)) {
             throw new ExceedWindowSizeException();
@@ -201,16 +201,20 @@ public class PacketManager {
 
         byte[] data = Packet.serialize(pwi.packet);
         DatagramPacket udpPkt = new DatagramPacket(data, data.length, remoteIp, remotePort);
-        udpSocket.send(udpPkt);
-        output(pwi.packet, "snd");
-        
-        pwi.sent = true;
-        if (isNewData == true) {
-            System.out.println("Increment inTransitPacket");
-            ++inTransitPacket;
-        }
-        if (inTransitPacket > windowSize) {
-            throw new DebugException();
+        try {
+            udpSocket.send(udpPkt);
+            output(pwi.packet, "snd");
+            pwi.sent = true;
+
+            if (isNewData == true) {
+                System.out.println("Increment inTransitPacket");
+                ++inTransitPacket;
+            }
+            if (inTransitPacket > windowSize) {
+                throw new DebugException();
+            }
+        } catch (IOException e) {
+            System.err.println(Thread.currentThread() + ": " + getClass().getName() + "::senderSendUDP IOException when sending packet with seq number " + pwi.packet.byteSeqNum + ". Will skip this send and continue. Exception info: " + e);
         }
 
         notifyAll();
@@ -260,7 +264,7 @@ public class PacketManager {
      * Sender T2: Call this function if it needs to retransmit packet because of duplicate ACKs.
      * @throws IOException
      */
-    public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, DebugException {
+    public synchronized void dupACKFastRetransmit(PacketWithInfo pwi, DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws DebugException {
         try {
             senderSendUDP(false, pwi, udpSocket, remotePort, remoteIp);
         }catch (ExceedWindowSizeException e) {

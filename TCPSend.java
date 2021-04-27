@@ -312,7 +312,13 @@ public class TCPSend {
                     else{
                         ACKpktSerial.setLength(b.length);
                         System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Listen to udpSocket.");
-                        udpSocket.receive(ACKpktSerial);
+                        try{
+                            udpSocket.receive(ACKpktSerial);
+                        } catch (IOException e) {
+                            System.err.println(Thread.currentThread() + ": " + getClass().getName() + "::run() IOException when trying to receive ACK. Will start over (continue). Exception info: " + e);
+                            continue;
+                        }
+                        
                         System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": Got an ACK packet.");
                         byte[] bb = new byte[ACKpktSerial.getLength()];
                         System.arraycopy(b, 0, bb, 0, ACKpktSerial.getLength());
@@ -406,13 +412,15 @@ public class TCPSend {
 
                
             } 
-            catch (IOException e) {
-                System.err.println(e);
-                throw new RuntimeException("IO Exception");
-            }
+            // catch (IOException e) {
+            //     System.err.println(e);
+            //     throw new RuntimeException("IO Exception");
+            // }
             catch (DebugException e) {
-                System.err.println(e.getStackTrace());
-                throw new RuntimeException("Debug Exception");
+                for ( StackTraceElement element : e.getStackTrace() )
+                    System.err.println(element);
+                System.exit(-1);
+                // throw new RuntimeException("Debug Exception");
                 // TODO: come to here once
             }
             catch (DupACKPacketNotExistException e) {
@@ -421,7 +429,7 @@ public class TCPSend {
             }
         }
 
-        private void dupACKResend(PacketWithInfo p) throws IOException, DebugException {
+        private void dupACKResend(PacketWithInfo p) throws DebugException {
             // Make resend packet with info
             PacketWithInfo resndPWI = p.getResendPacketWithInfo(packetManager.getRemoteSequenceNumber());
 
