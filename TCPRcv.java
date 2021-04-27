@@ -319,8 +319,10 @@ public class TCPRcv{
             }
             // After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
             try{  
-                if(! passiveClose(finPkt)){
+                int closeCount = 16; 
+                while(! passiveClose(finPkt) && closeCount>0){
                     System.out.println("passive close returns false");
+                    closeCount--;
                 }
             }catch (DebugException de){
                 System.err.print(de);
