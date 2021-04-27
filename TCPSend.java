@@ -476,6 +476,10 @@ public class TCPSend {
             //     System.err.println(e);
             //     throw e;
             // }
+
+            System.out.println("T3 is exiting...");
+            System.exit(1);
+
             return; 
         }
     }
