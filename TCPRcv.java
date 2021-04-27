@@ -38,6 +38,7 @@ public class TCPRcv{
     //Statistics statistics;
     boolean noMoreNewPacket = false;
     //long initTime;
+    boolean initSYNRcved = false; 
 
     /****************************************************************************/
     /******************               Constructor              ******************/
@@ -83,28 +84,43 @@ public class TCPRcv{
             //check flag and checksum 
             Packet synPkt = Packet.deserialize(bb);
             System.out.println("synPkt timestamp: " + synPkt.timeStamp);
-            if(!Packet.checkSYN(synPkt) || Packet.checkACK(synPkt) || Packet.checkFIN(synPkt)){ 
-                System.out.println(" syn flag problem");
-                return  false;}
             if(! synPkt.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);
                 System.out.println("checksum problem");
                 return false;}
+            
+            //if the new pkt is SYN continue, else, check if initSYNRcved (return false if not, else return true)
+            if(! Packet.checkSYN(synPkt)){
+                if(Packet.checkACK(synPkt) && ! Packet.checkFIN(synPkt)){
+                    if(initSYNRcved){
+                        return true; //have handshaked last turn 
+                    }    
+                }
+                return false; //wrong packet
+            }
+            if(Packet.checkSYN(synPkt) && !Packet.checkACK(synPkt) && ! Packet.checkFIN(synPkt)){
+                //correct first SYN 
+                //if valid syn, set remote sequence number as received (should be 0) 
+                packetManager.setRemoteSequenceNumber(synPkt.getByteSeqNum());
+                this.senderIp = synUDP.getAddress();
+                this.senderPort = synUDP.getPort();
+                //print received packet
+                packetManager.output(synPkt, "rcv");
+                initSYNRcved = true; 
 
-            //if valid syn, set remote sequence number as received (should be 0) 
-            packetManager.setRemoteSequenceNumber(synPkt.getByteSeqNum());
-            this.senderIp = synUDP.getAddress();
-            this.senderPort = synUDP.getPort();
-            //print received packet
-            packetManager.output(synPkt, "rcv");
+            }else{
+                return false; //wrong packet 
+            }
+            
+            
 
             //reply with SYN and ACK and incr loacl sequence number by 1 
             Packet sap = makeSAPacket(packetManager, synPkt); 
             System.out.println("sap timestamp: " + sap.timeStamp);
             packetManager.receiverSendUDP(sap, udpSocket,  senderPort, senderIp);
-            packetManager.increaseLocalSequenceNumber(1);
+            packetManager.setLocalSequenceNumber(1);
 
-            //receive ACK 
+            //receive ACK or SYN if the SA packet not received 
             b = new byte[maxDatagramPacketLength];
             DatagramPacket a = new DatagramPacket( b, maxDatagramPacketLength);
             udpSocket.receive(a);
@@ -121,11 +137,13 @@ public class TCPRcv{
                     return false;}
                 if(!Packet.checkACK(aPkt)){ 
                     if(Packet.checkSYN(aPkt)){
+                        //resend SYN+ACK
+                        packetManager.receiverSendUDP(sap, udpSocket,  senderPort, senderIp);
                         udpSocket.receive(a);
                         dropCount--;
                         continue;
                      }else{
-                        return false; 
+                        return false; //wrong packet 
                     }
                     
                     }
@@ -133,7 +151,7 @@ public class TCPRcv{
             }
             if(dropCount ==0){
                 System.out.println("cannot receive ACK for 16 times");
-                return false; 
+                return true;  //doesn't matter 
             }
             
             
