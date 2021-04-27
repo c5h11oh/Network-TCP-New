@@ -246,6 +246,8 @@ public class TCPRcv{
                 }
                 else if (continuousPackets.size() >= windowSize) {
                         // although new packet is in window range, continuousPackets has no space. do nothing.
+                    System.out.println(Thread.currentThread().getName() + ": continuousPackets is full. Drop received packet seq num " + pkt.byteSeqNum);
+                        
                 }
                 else {
                         // new packet is in window range. continuousPackets has space. put it in packetManager. update `continuousPackets` and `remoteSequenceNumber`.

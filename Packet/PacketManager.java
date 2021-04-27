@@ -286,7 +286,6 @@ public class PacketManager {
     Sender T3: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
-    // TODO: see if adding "synchronized" affects the result
     public void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
@@ -314,6 +313,10 @@ public class PacketManager {
             //check packets and retransmit until find unexpired packets 
             //wait one timeout unit if unexpired found 
             helperCheckExpire(udpSocket, remotePort, remoteIp);
+
+            try{
+                Thread.sleep(10);
+            } catch (InterruptedException e) {}
         }
         
         // no more new packet will be put in queue. Deal with remaining packets in queue.
