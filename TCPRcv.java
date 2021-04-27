@@ -268,6 +268,8 @@ public class TCPRcv{
                     System.exit(1);
                 }
                 
+                // DEBUG
+                System.out.println("packetManager size: " + packetManager.getQueue().size()+ "\tcontinuiusPackets size: " + continuousPackets.size());
             } // end of while(true) 
             
 
