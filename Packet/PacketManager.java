@@ -297,9 +297,10 @@ public class PacketManager {
                 //if unexpired pkt found 
             //if queue empty, sleep until sender buffer put() notify 
         //end while, another while loop to check until queue empty 
-
+        int debugCounter = 0;
         while( !allPacketsEnqueued){
-
+            // DEBUG
+            System.out.println(Thread.currentThread() + "[" + debugCounter++ + "]: running checkExpire while loop");
             
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
