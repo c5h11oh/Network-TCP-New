@@ -353,6 +353,7 @@ public class TCPSend {
                                 }
                             }
                             else if (ACKnum > lastACKnum) { // May be a new ACK or a dup ACK, ACK number is not wrapped
+                                int prevPktSeqNum = -1;
                                 for(PacketWithInfo p : packetManager.getQueue()){
                                     if (p.packet.byteSeqNum < ACKnum){
                                         // If seqNum+length==ACKnum -> update RTT, timeout
@@ -365,7 +366,8 @@ public class TCPSend {
                                             throw new RuntimeException("assert problem");
                                         }
                                         System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The packet p with sequence number" + p.packet.byteSeqNum + "should have been removed.") ;
-                                        packetManager.decrementInTransitPacket();
+                                        if (prevPktSeqNum != p.packet.byteSeqNum)
+                                            packetManager.decrementInTransitPacket();
     
                                     }
                                     else if (p.packet.byteSeqNum == ACKnum){
