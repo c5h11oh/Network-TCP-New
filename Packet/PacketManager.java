@@ -136,6 +136,7 @@ public class PacketManager {
     public Packet makeFINPacket(){
         Packet f = new Packet(this.getLocalSequenceNumber());
         Packet.setFlag(f, false, true, false);
+        
         f.setACK( this.getRemoteSequenceNumber() + 1);
         Packet.calculateAndSetChecksum(f);
         return f; 

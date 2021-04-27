@@ -147,16 +147,20 @@ public class TCPRcv{
 
         try{
         //reply ACK
+        packetManager.increaseRemoteSequenceNumber(1);
         Packet a = packetManager.makeACKPacket(finPkt);
         //assert a.getACK() == finPkt.getByteSeqNum()+1 : "receiver close wrong ACK replied to FIN";
-        if( a.getACK() == finPkt.getByteSeqNum()+1){
+        if( a.getACK() != finPkt.getByteSeqNum()+1){
             throw new DebugException();
         }
         packetManager.receiverSendUDP(a, udpSocket,  senderPort, senderIp);
 
         //reply FIN
         Packet f = packetManager.makeFINPacket();
+        //System.out.println("receiver reply fin, fin flag: "+Packet.checkFIN(f));
         packetManager.receiverSendUDP(f,udpSocket,  senderPort, senderIp );
+        //packetManager.increaseLocalSequenceNumber(1);
+        
 
         //receive ACK
         byte[] b = new byte[maxDatagramPacketLength];
@@ -171,7 +175,9 @@ public class TCPRcv{
             packetManager.getStatistics().incrementIncChecksum(1);
             return false;}
         if(Packet.checkFIN(a2) || Packet.checkSYN(a2) || ! Packet.checkACK(a2)){return false;}
-        if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){return false;}
+        if(a2.getACK() != packetManager.getLocalSequenceNumber() +1){
+            System.out.println("!");
+            return false;}
         packetManager.output(a2, "rcv");
 
 
@@ -184,6 +190,8 @@ public class TCPRcv{
         try{
             wait(50);
         } catch (InterruptedException e) {}
+        catch(IllegalMonitorStateException e2){}
+        System.out.println("rcvr close");
         udpSocket.close();
         return true;
     }
@@ -281,7 +289,9 @@ public class TCPRcv{
             }
             // After receiving FIN we reach here. Need to send appropriate packets to sender to close connection.
             try{  
-                passiveClose(finPkt);
+                if(! passiveClose(finPkt)){
+                    System.out.println("passive close returns false");
+                }
               }catch (DebugException de){
                 System.err.print(de);
                 throw new RuntimeException(de.toString());
@@ -564,6 +574,7 @@ public class TCPRcv{
             System.err.println("TCPRcv: work(): SocketException: " + se); 
             System.exit(1);
         }
+        
     }
 
     // Get statistics
