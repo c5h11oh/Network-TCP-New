@@ -1,0 +1,960 @@
+Timeout: initially705milliseconds.
+snd    0.090 S - - - 0 0 0
+snd    5.139 S - - - 0 0 0
+rcv    5.203 S A - - 0 0 1
+Timeout: first update
+Timeout: updated timeout: 10230milliseconds.
+snd    5.205 - A - - 1 0 1
+snd    5.221 - A - D 1 1400 1
+Increment inTransitPacket
+snd    5.223 - A - D 1401 1400 1
+Increment inTransitPacket
+snd    5.232 - A - D 2801 1400 1
+Increment inTransitPacket
+snd    5.246 - A - D 4201 1400 1
+Increment inTransitPacket
+snd    5.253 - A - D 5601 1400 1
+Increment inTransitPacket
+snd    5.264 - A - D 7001 1400 1
+Increment inTransitPacket
+snd    5.277 - A - D 8401 1400 1
+Increment inTransitPacket
+snd    5.297 - A - D 9801 1400 1
+Increment inTransitPacket
+snd    5.300 - A - D 11201 1400 1
+Increment inTransitPacket
+snd    5.311 - A - D 12601 1400 1
+Increment inTransitPacket
+snd    5.324 - A - D 14001 1400 1
+Increment inTransitPacket
+snd    5.331 - A - D 15401 1400 1
+Increment inTransitPacket
+snd    5.344 - A - D 16801 1400 1
+Increment inTransitPacket
+snd    5.348 - A - D 18201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[0]: PM is empty. yield.
+snd    5.360 - A - D 19601 1400 1
+Increment inTransitPacket
+snd    5.378 - A - D 21001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[1]: Listen to udpSocket.
+T2_ACKReceiver[1]: Got an ACK packet.
+rcv    5.382 - A - - 1 0 1401
+Timeout: updated timeout: 9449milliseconds.
+T2_ACKReceiver[1]: The packet p with sequence number1should have been removed.
+Decremented inTransitPacket to 15
+snd    5.544 - A - D 22401 1400 1
+Increment inTransitPacket
+snd    5.545 - A - D 23801 1400 1
+Increment inTransitPacket
+snd    5.547 - A - D 25201 1400 1
+Increment inTransitPacket
+snd    5.549 - A - D 26601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[2]: Listen to udpSocket.
+T2_ACKReceiver[2]: Got an ACK packet.
+rcv    5.552 - A - - 1 0 2801
+Timeout: updated timeout: 11856milliseconds.
+T2_ACKReceiver[2]: The packet p with sequence number1401should have been removed.
+Decremented inTransitPacket to 18
+T2_ACKReceiver[3]: Listen to udpSocket.
+T2_ACKReceiver[3]: Got an ACK packet.
+snd    5.557 - A - D 28001 1400 1
+Increment inTransitPacket
+rcv    5.555 - A - - 1 0 4201
+snd    5.566 - A - D 29401 1400 1
+Increment inTransitPacket
+Timeout: updated timeout: 13055milliseconds.
+T2_ACKReceiver[3]: The packet p with sequence number2801should have been removed.
+Decremented inTransitPacket to 19
+T2_ACKReceiver[4]: Listen to udpSocket.
+T2_ACKReceiver[4]: Got an ACK packet.
+rcv    5.579 - A - - 1 0 5601
+Timeout: updated timeout: 13453milliseconds.
+T2_ACKReceiver[4]: The packet p with sequence number4201should have been removed.
+Decremented inTransitPacket to 18
+T2_ACKReceiver[5]: Listen to udpSocket.
+T2_ACKReceiver[5]: Got an ACK packet.
+rcv    5.580 - A - - 1 0 7001
+Timeout: updated timeout: 13318milliseconds.
+T2_ACKReceiver[5]: The packet p with sequence number5601should have been removed.
+Decremented inTransitPacket to 17
+T2_ACKReceiver[6]: Listen to udpSocket.
+T2_ACKReceiver[6]: Got an ACK packet.
+rcv    5.581 - A - - 1 0 8401
+Timeout: updated timeout: 12832milliseconds.
+T2_ACKReceiver[6]: The packet p with sequence number7001should have been removed.
+Decremented inTransitPacket to 16
+T2_ACKReceiver[7]: Listen to udpSocket.
+T2_ACKReceiver[7]: Got an ACK packet.
+rcv    5.582 - A - - 1 0 9801
+Timeout: updated timeout: 12133milliseconds.
+T2_ACKReceiver[7]: The packet p with sequence number8401should have been removed.
+Decremented inTransitPacket to 15
+T2_ACKReceiver[8]: Listen to udpSocket.
+T2_ACKReceiver[8]: Got an ACK packet.
+rcv    5.583 - A - - 1 0 11201
+snd    5.583 - A - D 30801 1400 1
+Increment inTransitPacket
+snd    5.620 - A - D 32201 1400 1
+Increment inTransitPacket
+snd    5.621 - A - D 33601 1400 1
+Increment inTransitPacket
+Timeout: updated timeout: 11277milliseconds.
+T2_ACKReceiver[8]: The packet p with sequence number9801should have been removed.
+Decremented inTransitPacket to 17
+T2_ACKReceiver[9]: Listen to udpSocket.
+T2_ACKReceiver[9]: Got an ACK packet.
+rcv    5.628 - A - - 1 0 12601
+Timeout: updated timeout: 10382milliseconds.
+T2_ACKReceiver[9]: The packet p with sequence number11201should have been removed.
+Decremented inTransitPacket to 16
+T2_ACKReceiver[10]: Listen to udpSocket.
+T2_ACKReceiver[10]: Got an ACK packet.
+rcv    5.629 - A - - 1 0 14001
+Timeout: updated timeout: 9487milliseconds.
+T2_ACKReceiver[10]: The packet p with sequence number12601should have been removed.
+Decremented inTransitPacket to 15
+T2_ACKReceiver[11]: Listen to udpSocket.
+snd    5.630 - A - D 35001 1400 1
+Increment inTransitPacket
+snd    5.631 - A - D 36401 1400 1
+Increment inTransitPacket
+snd    5.632 - A - D 37801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[11]: Got an ACK packet.
+rcv    5.645 - A - - 1 0 15401
+Timeout: updated timeout: 8612milliseconds.
+T2_ACKReceiver[11]: The packet p with sequence number14001should have been removed.
+Decremented inTransitPacket to 17
+T2_ACKReceiver[12]: Listen to udpSocket.
+T2_ACKReceiver[12]: Got an ACK packet.
+rcv    5.646 - A - - 1 0 16801
+snd    5.653 - A - D 39201 1400 1
+Increment inTransitPacket
+Timeout: updated timeout: 7771milliseconds.
+T2_ACKReceiver[12]: The packet p with sequence number15401should have been removed.
+Decremented inTransitPacket to 17
+T2_ACKReceiver[13]: Listen to udpSocket.
+T2_ACKReceiver[13]: Got an ACK packet.
+rcv    5.660 - A - - 1 0 16801
+T2_ACKReceiver[13]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[13]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[14]: Listen to udpSocket.
+T2_ACKReceiver[14]: Got an ACK packet.
+rcv    5.662 - A - - 1 0 16801
+T2_ACKReceiver[14]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[14]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[15]: Listen to udpSocket.
+snd    5.663 - A - D 40601 1400 1
+Increment inTransitPacket
+snd    5.664 - A - D 42001 1400 1
+Increment inTransitPacket
+snd    5.674 - A - D 43401 1400 1
+Increment inTransitPacket
+snd    5.676 - A - D 44801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[15]: Got an ACK packet.
+rcv    5.689 - A - - 1 0 16801
+T2_ACKReceiver[15]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[15]: Found the duplicate ACK. Increment count.
+snd    5.699 - A - D 16801 1400 1
+T2_ACKReceiver[16]: Listen to udpSocket.
+T2_ACKReceiver[16]: Got an ACK packet.
+rcv    5.700 - A - - 1 0 16801
+T2_ACKReceiver[16]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[16]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[17]: Listen to udpSocket.
+T2_ACKReceiver[17]: Got an ACK packet.
+rcv    5.700 - A - - 1 0 16801
+T2_ACKReceiver[17]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[17]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[18]: Listen to udpSocket.
+T2_ACKReceiver[18]: Got an ACK packet.
+rcv    5.701 - A - - 1 0 16801
+T2_ACKReceiver[18]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[18]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[19]: Listen to udpSocket.
+snd    5.704 - A - D 46201 1400 1
+Increment inTransitPacket
+snd    5.715 - A - D 47601 1400 1
+Increment inTransitPacket
+snd    5.721 - A - D 49001 1400 1
+Increment inTransitPacket
+snd    5.722 - A - D 50401 1400 1
+Increment inTransitPacket
+snd    5.723 - A - D 51801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[19]: Got an ACK packet.
+rcv    5.731 - A - - 1 0 16801
+snd    5.735 - A - D 53201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[19]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[19]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[20]: Listen to udpSocket.
+T2_ACKReceiver[20]: Got an ACK packet.
+rcv    5.737 - A - - 1 0 16801
+T2_ACKReceiver[20]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[20]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[21]: Listen to udpSocket.
+T2_ACKReceiver[21]: Got an ACK packet.
+rcv    5.740 - A - - 1 0 16801
+T2_ACKReceiver[21]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[21]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[22]: Listen to udpSocket.
+snd    5.742 - A - D 54601 1400 1
+Increment inTransitPacket
+snd    5.749 - A - D 56001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[22]: Got an ACK packet.
+rcv    5.758 - A - - 1 0 16801
+snd    5.759 - A - D 57401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[22]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[22]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[23]: Listen to udpSocket.
+T2_ACKReceiver[23]: Got an ACK packet.
+rcv    5.784 - A - - 1 0 16801
+T2_ACKReceiver[23]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[23]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[24]: Listen to udpSocket.
+T2_ACKReceiver[24]: Got an ACK packet.
+rcv    5.794 - A - - 1 0 16801
+T2_ACKReceiver[24]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[24]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[25]: Listen to udpSocket.
+T2_ACKReceiver[25]: Got an ACK packet.
+rcv    5.803 - A - - 1 0 16801
+T2_ACKReceiver[25]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[25]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[26]: Listen to udpSocket.
+T2_ACKReceiver[26]: Got an ACK packet.
+rcv    5.809 - A - - 1 0 16801
+T2_ACKReceiver[26]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[26]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[27]: Listen to udpSocket.
+T2_ACKReceiver[27]: Got an ACK packet.
+rcv    5.817 - A - - 1 0 16801
+T2_ACKReceiver[27]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[27]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[28]: Listen to udpSocket.
+T2_ACKReceiver[28]: Got an ACK packet.
+rcv    5.826 - A - - 1 0 16801
+T2_ACKReceiver[28]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[28]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[29]: Listen to udpSocket.
+T2_ACKReceiver[29]: Got an ACK packet.
+rcv    5.838 - A - - 1 0 16801
+T2_ACKReceiver[29]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[29]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[30]: Listen to udpSocket.
+T2_ACKReceiver[30]: Got an ACK packet.
+rcv    5.853 - A - - 1 0 18201
+T2_ACKReceiver[30]: The packet p with sequence number16801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[31]: Listen to udpSocket.
+snd    5.854 - A - D 58801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[31]: Got an ACK packet.
+rcv    5.862 - A - - 1 0 19601
+Timeout: updated timeout: 6826milliseconds.
+T2_ACKReceiver[31]: The packet p with sequence number18201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[32]: Listen to udpSocket.
+snd    5.863 - A - D 60201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[32]: Got an ACK packet.
+rcv    5.869 - A - - 1 0 21001
+Timeout: updated timeout: 6007milliseconds.
+T2_ACKReceiver[32]: The packet p with sequence number19601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[33]: Listen to udpSocket.
+snd    5.870 - A - D 61601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[33]: Got an ACK packet.
+rcv    5.878 - A - - 1 0 22401
+Timeout: updated timeout: 5312milliseconds.
+T2_ACKReceiver[33]: The packet p with sequence number21001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[34]: Listen to udpSocket.
+snd    5.878 - A - D 63001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[34]: Got an ACK packet.
+rcv    5.890 - A - - 1 0 23801
+Timeout: updated timeout: 4841milliseconds.
+T2_ACKReceiver[34]: The packet p with sequence number22401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[35]: Listen to udpSocket.
+T2_ACKReceiver[35]: Got an ACK packet.
+rcv    5.890 - A - - 1 0 25201
+Timeout: updated timeout: 4391milliseconds.
+T2_ACKReceiver[35]: The packet p with sequence number23801should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[36]: Listen to udpSocket.
+snd    5.891 - A - D 64401 1400 1
+Increment inTransitPacket
+snd    5.891 - A - D 65801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[36]: Got an ACK packet.
+rcv    5.904 - A - - 1 0 26601
+Timeout: updated timeout: 3959milliseconds.
+T2_ACKReceiver[36]: The packet p with sequence number25201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[37]: Listen to udpSocket.
+snd    5.905 - A - D 67201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[37]: Got an ACK packet.
+rcv    5.933 - A - - 1 0 28001
+Timeout: updated timeout: 3538milliseconds.
+T2_ACKReceiver[37]: The packet p with sequence number26601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[38]: Listen to udpSocket.
+snd    5.934 - A - D 68601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[38]: Got an ACK packet.
+rcv    5.943 - A - - 1 0 29401
+Timeout: updated timeout: 3162milliseconds.
+T2_ACKReceiver[38]: The packet p with sequence number28001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[39]: Listen to udpSocket.
+snd    5.944 - A - D 70001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[39]: Got an ACK packet.
+rcv    5.956 - A - - 1 0 30801
+Timeout: updated timeout: 2826milliseconds.
+T2_ACKReceiver[39]: The packet p with sequence number29401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[40]: Listen to udpSocket.
+snd    5.957 - A - D 71401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[40]: Got an ACK packet.
+rcv    5.965 - A - - 1 0 32201
+Timeout: updated timeout: 2536milliseconds.
+T2_ACKReceiver[40]: The packet p with sequence number30801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[41]: Listen to udpSocket.
+snd    5.966 - A - D 72801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[41]: Got an ACK packet.
+rcv    5.974 - A - - 1 0 33601
+Timeout: updated timeout: 2286milliseconds.
+T2_ACKReceiver[41]: The packet p with sequence number32201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[42]: Listen to udpSocket.
+snd    5.975 - A - D 74201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[42]: Got an ACK packet.
+rcv    5.986 - A - - 1 0 35001
+Timeout: updated timeout: 2070milliseconds.
+T2_ACKReceiver[42]: The packet p with sequence number33601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[43]: Listen to udpSocket.
+snd    5.986 - A - D 75601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[43]: Got an ACK packet.
+rcv    5.988 - A - - 1 0 36401
+Timeout: updated timeout: 1881milliseconds.
+T2_ACKReceiver[43]: The packet p with sequence number35001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[44]: Listen to udpSocket.
+snd    5.990 - A - D 77001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[44]: Got an ACK packet.
+rcv    6.075 - A - - 1 0 37801
+Timeout: updated timeout: 1634milliseconds.
+T2_ACKReceiver[44]: The packet p with sequence number36401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[45]: Listen to udpSocket.
+T2_ACKReceiver[45]: Got an ACK packet.
+rcv    6.076 - A - - 1 0 37801
+T2_ACKReceiver[45]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[45]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[46]: Listen to udpSocket.
+T2_ACKReceiver[46]: Got an ACK packet.
+rcv    6.076 - A - - 1 0 37801
+T2_ACKReceiver[46]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[46]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[47]: Listen to udpSocket.
+T2_ACKReceiver[47]: Got an ACK packet.
+rcv    6.077 - A - - 1 0 37801
+T2_ACKReceiver[47]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[47]: Found the duplicate ACK. Increment count.
+snd    6.079 - A - D 37801 1400 1
+snd    6.084 - A - D 78401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[48]: Listen to udpSocket.
+T2_ACKReceiver[48]: Got an ACK packet.
+rcv    6.085 - A - - 1 0 37801
+T2_ACKReceiver[48]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[48]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[49]: Listen to udpSocket.
+T2_ACKReceiver[49]: Got an ACK packet.
+rcv    6.085 - A - - 1 0 37801
+T2_ACKReceiver[49]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[49]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[50]: Listen to udpSocket.
+T2_ACKReceiver[50]: Got an ACK packet.
+rcv    6.211 - A - - 1 0 39201
+T2_ACKReceiver[50]: The packet p with sequence number37801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[51]: Listen to udpSocket.
+T2_ACKReceiver[51]: Got an ACK packet.
+rcv    6.341 - A - - 1 0 40601
+Timeout: updated timeout: 1537milliseconds.
+T2_ACKReceiver[51]: The packet p with sequence number39201should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[52]: Listen to udpSocket.
+snd    6.344 - A - D 79801 1400 1
+Increment inTransitPacket
+snd    6.347 - A - D 81201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[52]: Got an ACK packet.
+rcv    6.432 - A - - 1 0 42001
+Timeout: updated timeout: 1610milliseconds.
+T2_ACKReceiver[52]: The packet p with sequence number40601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[53]: Listen to udpSocket.
+T2_ACKReceiver[53]: Got an ACK packet.
+rcv    6.499 - A - - 1 0 43401
+Timeout: updated timeout: 1634milliseconds.
+T2_ACKReceiver[53]: The packet p with sequence number42001should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[54]: Listen to udpSocket.
+snd    6.501 - A - D 82601 1400 1
+Increment inTransitPacket
+snd    6.502 - A - D 84001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[54]: Got an ACK packet.
+rcv    6.631 - A - - 1 0 44801
+Timeout: updated timeout: 2235milliseconds.
+T2_ACKReceiver[54]: The packet p with sequence number43401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[55]: Listen to udpSocket.
+T2_ACKReceiver[55]: Got an ACK packet.
+rcv    7.050 - A - - 1 0 46201
+Timeout: updated timeout: 2598milliseconds.
+T2_ACKReceiver[55]: The packet p with sequence number44801should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[56]: Listen to udpSocket.
+snd    7.051 - A - D 85401 1400 1
+Increment inTransitPacket
+snd    7.051 - A - D 86801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[56]: Got an ACK packet.
+rcv    7.100 - A - - 1 0 47601
+Timeout: updated timeout: 3274milliseconds.
+T2_ACKReceiver[56]: The packet p with sequence number46201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[57]: Listen to udpSocket.
+T2_ACKReceiver[57]: Got an ACK packet.
+rcv    7.501 - A - - 1 0 49001
+Timeout: updated timeout: 3659milliseconds.
+T2_ACKReceiver[57]: The packet p with sequence number47601should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[58]: Listen to udpSocket.
+snd    7.502 - A - D 88201 1400 1
+Increment inTransitPacket
+snd    7.502 - A - D 89601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[58]: Got an ACK packet.
+rcv    7.588 - A - - 1 0 50401
+snd    7.885 - A - D 81201 1400 1
+Timeout: updated timeout: 4280milliseconds.
+T2_ACKReceiver[58]: The packet p with sequence number49001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[59]: Listen to udpSocket.
+T2_ACKReceiver[59]: Got an ACK packet.
+rcv    7.885 - A - - 1 0 51801
+Timeout: updated timeout: 4619milliseconds.
+T2_ACKReceiver[59]: The packet p with sequence number50401should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[60]: Listen to udpSocket.
+snd    7.886 - A - D 91001 1400 1
+Increment inTransitPacket
+snd    7.886 - A - D 92401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[60]: Got an ACK packet.
+rcv    8.038 - A - - 1 0 51801
+snd    8.039 - A - D 82601 1400 1
+snd    8.040 - A - D 79801 1400 1
+T2_ACKReceiver[60]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[60]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[61]: Listen to udpSocket.
+T2_ACKReceiver[61]: Got an ACK packet.
+rcv    8.043 - A - - 1 0 51801
+T2_ACKReceiver[61]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[61]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[62]: Listen to udpSocket.
+snd    8.043 - A - D 78401 1400 1
+snd    8.059 - A - D 77001 1400 1
+T2_ACKReceiver[62]: Got an ACK packet.
+rcv    8.136 - A - - 1 0 51801
+snd    8.136 - A - D 84001 1400 1
+T2_ACKReceiver[62]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[62]: Found the duplicate ACK. Increment count.
+snd    8.345 - A - D 51801 1400 1
+T2_ACKReceiver[63]: Listen to udpSocket.
+T2_ACKReceiver[63]: Got an ACK packet.
+rcv    8.345 - A - - 1 0 51801
+T2_ACKReceiver[63]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[63]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[64]: Listen to udpSocket.
+T2_ACKReceiver[64]: Got an ACK packet.
+rcv    8.345 - A - - 1 0 51801
+T2_ACKReceiver[64]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[64]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[65]: Listen to udpSocket.
+T2_ACKReceiver[65]: Got an ACK packet.
+rcv    8.346 - A - - 1 0 51801
+T2_ACKReceiver[65]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[65]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[66]: Listen to udpSocket.
+T2_ACKReceiver[66]: Got an ACK packet.
+rcv    8.411 - A - - 1 0 53201
+T2_ACKReceiver[66]: The packet p with sequence number51801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[67]: Listen to udpSocket.
+snd    8.412 - A - D 93801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[67]: Got an ACK packet.
+rcv    8.513 - A - - 1 0 54601
+snd    8.513 - A - D 74201 1400 1
+Timeout: updated timeout: 5593milliseconds.
+T2_ACKReceiver[67]: The packet p with sequence number53201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[68]: Listen to udpSocket.
+snd    8.624 - A - D 95201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[68]: Got an ACK packet.
+rcv    8.625 - A - - 1 0 56001
+Timeout: updated timeout: 6130milliseconds.
+T2_ACKReceiver[68]: The packet p with sequence number54601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[69]: Listen to udpSocket.
+T2_ACKReceiver[69]: Got an ACK packet.
+rcv    8.690 - A - - 1 0 57401
+snd    8.690 - A - D 85401 1400 1
+snd    8.693 - A - D 75601 1400 1
+snd    8.693 - A - D 96601 1400 1
+Increment inTransitPacket
+Timeout: updated timeout: 6451milliseconds.
+T2_ACKReceiver[69]: The packet p with sequence number56001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[70]: Listen to udpSocket.
+snd    8.694 - A - D 98001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[70]: Got an ACK packet.
+rcv    8.796 - A - - 1 0 58801
+snd    8.797 - A - D 72801 1400 1
+snd    9.121 - A - D 71401 1400 1
+Timeout: updated timeout: 7024milliseconds.
+T2_ACKReceiver[70]: The packet p with sequence number57401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[71]: Listen to udpSocket.
+T2_ACKReceiver[71]: Got an ACK packet.
+rcv    9.122 - A - - 1 0 58801
+T2_ACKReceiver[71]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[71]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[72]: Listen to udpSocket.
+T2_ACKReceiver[72]: Got an ACK packet.
+rcv    9.123 - A - - 1 0 58801
+T2_ACKReceiver[72]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[72]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[73]: Listen to udpSocket.
+T2_ACKReceiver[73]: Got an ACK packet.
+rcv    9.123 - A - - 1 0 58801
+T2_ACKReceiver[73]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[73]: Found the duplicate ACK. Increment count.
+snd    9.129 - A - D 58801 1400 1
+T2_ACKReceiver[74]: Listen to udpSocket.
+snd    9.129 - A - D 99401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[74]: Got an ACK packet.
+rcv    9.184 - A - - 1 0 58801
+T2_ACKReceiver[74]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[74]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[75]: Listen to udpSocket.
+T2_ACKReceiver[75]: Got an ACK packet.
+rcv    9.271 - A - - 1 0 60201
+snd    9.423 - A - D 81201 1400 1
+T2_ACKReceiver[75]: The packet p with sequence number58801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[76]: Listen to udpSocket.
+T2_ACKReceiver[76]: Got an ACK packet.
+rcv    9.424 - A - - 1 0 61601
+Timeout: updated timeout: 7505milliseconds.
+T2_ACKReceiver[76]: The packet p with sequence number60201should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[77]: Listen to udpSocket.
+snd    9.424 - A - D 100801 1400 1
+Increment inTransitPacket
+snd    9.424 - A - D 102201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[77]: Got an ACK packet.
+rcv    9.486 - A - - 1 0 63001
+snd    9.486 - A - D 70001 1400 1
+Timeout: updated timeout: 7763milliseconds.
+T2_ACKReceiver[77]: The packet p with sequence number61601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[78]: Listen to udpSocket.
+snd    9.489 - A - D 103601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[78]: Got an ACK packet.
+rcv    9.494 - A - - 1 0 64401
+Timeout: updated timeout: 7800milliseconds.
+T2_ACKReceiver[78]: The packet p with sequence number63001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[79]: Listen to udpSocket.
+snd    9.495 - A - D 105001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[79]: Got an ACK packet.
+rcv    9.540 - A - - 1 0 65801
+Timeout: updated timeout: 7731milliseconds.
+T2_ACKReceiver[79]: The packet p with sequence number64401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[80]: Listen to udpSocket.
+T2_ACKReceiver[80]: Got an ACK packet.
+rcv    9.541 - A - - 1 0 67201
+Timeout: updated timeout: 7558milliseconds.
+T2_ACKReceiver[80]: The packet p with sequence number65801should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[81]: Listen to udpSocket.
+snd    9.541 - A - D 106401 1400 1
+Increment inTransitPacket
+snd    9.542 - A - D 107801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[81]: Got an ACK packet.
+rcv    9.576 - A - - 1 0 68601
+snd    9.578 - A - D 82601 1400 1
+snd    9.649 - A - D 86801 1400 1
+Timeout: updated timeout: 7430milliseconds.
+T2_ACKReceiver[81]: The packet p with sequence number67201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[82]: Listen to udpSocket.
+T2_ACKReceiver[82]: Got an ACK packet.
+rcv    9.650 - A - - 1 0 70001
+Timeout: updated timeout: 7198milliseconds.
+T2_ACKReceiver[82]: The packet p with sequence number68601should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[83]: Listen to udpSocket.
+T2_ACKReceiver[83]: Got an ACK packet.
+rcv    9.650 - A - - 1 0 71401
+T2_ACKReceiver[83]: The packet p with sequence number70001should have been removed.
+Decremented inTransitPacket to 27
+T2_ACKReceiver[84]: Listen to udpSocket.
+T2_ACKReceiver[84]: Got an ACK packet.
+rcv    9.651 - A - - 1 0 72801
+T2_ACKReceiver[84]: The packet p with sequence number71401should have been removed.
+Decremented inTransitPacket to 26
+T2_ACKReceiver[85]: Listen to udpSocket.
+snd    9.656 - A - D 109201 1400 1
+Increment inTransitPacket
+snd    9.656 - A - D 110601 1400 1
+Increment inTransitPacket
+snd    9.657 - A - D 112001 1400 1
+Increment inTransitPacket
+snd    9.657 - A - D 113401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[85]: Got an ACK packet.
+rcv    9.658 - A - - 1 0 74201
+T2_ACKReceiver[85]: The packet p with sequence number72801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[86]: Listen to udpSocket.
+snd    9.661 - A - D 114801 1400 1
+Increment inTransitPacket
+snd    9.677 - A - D 79801 1400 1
+T2_ACKReceiver[86]: Got an ACK packet.
+rcv    9.681 - A - - 1 0 75601
+T2_ACKReceiver[86]: The packet p with sequence number74201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[87]: Listen to udpSocket.
+snd    9.682 - A - D 116201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[87]: Got an ACK packet.
+rcv    9.686 - A - - 1 0 77001
+T2_ACKReceiver[87]: The packet p with sequence number75601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[88]: Listen to udpSocket.
+snd    9.686 - A - D 117601 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[88]: Got an ACK packet.
+rcv    9.691 - A - - 1 0 78401
+T2_ACKReceiver[88]: The packet p with sequence number77001should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[89]: Listen to udpSocket.
+T2_ACKReceiver[89]: Got an ACK packet.
+rcv    9.691 - A - - 1 0 79801
+T2_ACKReceiver[89]: The packet p with sequence number78401should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[90]: Listen to udpSocket.
+snd    9.691 - A - D 119001 1400 1
+Increment inTransitPacket
+snd    9.692 - A - D 120401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[90]: Got an ACK packet.
+rcv    9.695 - A - - 1 0 81201
+T2_ACKReceiver[90]: The packet p with sequence number79801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[91]: Listen to udpSocket.
+snd    9.696 - A - D 121801 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[91]: Got an ACK packet.
+rcv    9.702 - A - - 1 0 81201
+T2_ACKReceiver[91]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[91]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[92]: Listen to udpSocket.
+T2_ACKReceiver[92]: Got an ACK packet.
+rcv    9.710 - A - - 1 0 82601
+T2_ACKReceiver[92]: The packet p with sequence number81201should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[93]: Listen to udpSocket.
+snd    9.710 - A - D 123201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[93]: Got an ACK packet.
+rcv    9.716 - A - - 1 0 84001
+T2_ACKReceiver[93]: The packet p with sequence number82601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[94]: Listen to udpSocket.
+T2_ACKReceiver[94]: Got an ACK packet.
+rcv    9.717 - A - - 1 0 85401
+T2_ACKReceiver[94]: The packet p with sequence number84001should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[95]: Listen to udpSocket.
+snd    9.717 - A - D 124601 1400 1
+Increment inTransitPacket
+snd    9.717 - A - D 126001 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[95]: Got an ACK packet.
+rcv    9.731 - A - - 1 0 86801
+T2_ACKReceiver[95]: The packet p with sequence number85401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[96]: Listen to udpSocket.
+snd    9.731 - A - D 127401 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[96]: Got an ACK packet.
+rcv    9.776 - A - - 1 0 88201
+T2_ACKReceiver[96]: The packet p with sequence number86801should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[97]: Listen to udpSocket.
+T2_ACKReceiver[97]: Got an ACK packet.
+rcv    9.777 - A - - 1 0 89601
+Timeout: updated timeout: 6805milliseconds.
+T2_ACKReceiver[97]: The packet p with sequence number88201should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[98]: Listen to udpSocket.
+snd    9.778 - A - D 128801 1400 1
+Increment inTransitPacket
+snd    9.778 - A - D 130201 1400 1
+Increment inTransitPacket
+T2_ACKReceiver[98]: Got an ACK packet.
+rcv    9.844 - A - - 1 0 91001
+Timeout: updated timeout: 6347milliseconds.
+T2_ACKReceiver[98]: The packet p with sequence number89601should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[99]: Listen to udpSocket.
+T2_ACKReceiver[99]: Got an ACK packet.
+rcv    9.844 - A - - 1 0 92401
+Timeout: updated timeout: 6256milliseconds.
+T2_ACKReceiver[99]: The packet p with sequence number91001should have been removed.
+Decremented inTransitPacket to 28
+T2_ACKReceiver[100]: Listen to udpSocket.
+snd    9.846 - A - D 131601 1400 1
+Increment inTransitPacket
+snd    9.847 - A - D 133001 277 1
+Increment inTransitPacket
+T2_ACKReceiver[100]: Got an ACK packet.
+rcv    9.907 - A - - 1 0 93801
+Timeout: updated timeout: 6006milliseconds.
+T2_ACKReceiver[100]: The packet p with sequence number92401should have been removed.
+Decremented inTransitPacket to 29
+T2_ACKReceiver[101]: Listen to udpSocket.
+T2_ACKReceiver[101]: Got an ACK packet.
+rcv    9.975 - A - - 1 0 96601
+T2_ACKReceiver[101]: The packet p with sequence number93801should have been removed.
+Decremented inTransitPacket to 28
+Timeout: updated timeout: 6305milliseconds.
+T2_ACKReceiver[101]: The packet p with sequence number95201should have been removed.
+Decremented inTransitPacket to 27
+T2_ACKReceiver[102]: Listen to udpSocket.
+T2_ACKReceiver[102]: Got an ACK packet.
+rcv    9.976 - A - - 1 0 96601
+T2_ACKReceiver[102]: The ACK packet is a duplicate ACK.
+T2_ACKReceiver[102]: Found the duplicate ACK. Increment count.
+T2_ACKReceiver[103]: Listen to udpSocket.
+snd   14.288 - A - D 96601 1400 1
+T2_ACKReceiver[103]: Got an ACK packet.
+rcv   14.347 - A - - 1 0 98001
+T2_ACKReceiver[103]: The packet p with sequence number96601should have been removed.
+Decremented inTransitPacket to 26
+T2_ACKReceiver[104]: Listen to udpSocket.
+snd   14.855 - A - D 98001 1400 1
+T2_ACKReceiver[104]: Got an ACK packet.
+rcv   14.915 - A - - 1 0 99401
+T2_ACKReceiver[104]: The packet p with sequence number98001should have been removed.
+Decremented inTransitPacket to 25
+T2_ACKReceiver[105]: Listen to udpSocket.
+snd   15.581 - A - D 99401 1400 1
+T2_ACKReceiver[105]: Got an ACK packet.
+rcv   15.639 - A - - 1 0 100801
+T2_ACKReceiver[105]: The packet p with sequence number99401should have been removed.
+Decremented inTransitPacket to 24
+T2_ACKReceiver[106]: Listen to udpSocket.
+snd   16.103 - A - D 133001 277 1
+T2_ACKReceiver[106]: Got an ACK packet.
+rcv   16.159 - A - - 1 0 102201
+Timeout: updated timeout: 10132milliseconds.
+T2_ACKReceiver[106]: The packet p with sequence number100801should have been removed.
+Decremented inTransitPacket to 23
+T2_ACKReceiver[107]: Listen to udpSocket.
+snd   16.584 - A - D 130201 1400 1
+T2_ACKReceiver[107]: Got an ACK packet.
+rcv   16.653 - A - - 1 0 103601
+snd   16.653 - A - D 131601 1400 1
+Timeout: updated timeout: 13089milliseconds.
+T2_ACKReceiver[107]: The packet p with sequence number102201should have been removed.
+Decremented inTransitPacket to 22
+T2_ACKReceiver[108]: Listen to udpSocket.
+T2_ACKReceiver[108]: Got an ACK packet.
+rcv   16.763 - A - - 1 0 105001
+Timeout: updated timeout: 14897milliseconds.
+T2_ACKReceiver[108]: The packet p with sequence number103601should have been removed.
+Decremented inTransitPacket to 21
+T2_ACKReceiver[109]: Listen to udpSocket.
+snd   16.856 - A - D 110601 1400 1
+snd   16.857 - A - D 112001 1400 1
+snd   16.858 - A - D 113401 1400 1
+snd   16.858 - A - D 114801 1400 1
+snd   16.880 - A - D 116201 1400 1
+snd   16.885 - A - D 117601 1400 1
+snd   16.893 - A - D 119001 1400 1
+snd   16.893 - A - D 120401 1400 1
+snd   16.893 - A - D 121801 1400 1
+T2_ACKReceiver[109]: Got an ACK packet.
+rcv   16.911 - A - - 1 0 106401
+snd   16.912 - A - D 123201 1400 1
+snd   16.926 - A - D 124601 1400 1
+snd   16.927 - A - D 126001 1400 1
+snd   16.935 - A - D 127401 1400 1
+Timeout: updated timeout: 16032milliseconds.
+T2_ACKReceiver[109]: The packet p with sequence number105001should have been removed.
+Decremented inTransitPacket to 20
+T2_ACKReceiver[110]: Listen to udpSocket.
+T2_ACKReceiver[110]: Got an ACK packet.
+rcv   16.935 - A - - 1 0 107801
+Timeout: updated timeout: 16457milliseconds.
+T2_ACKReceiver[110]: The packet p with sequence number106401should have been removed.
+Decremented inTransitPacket to 19
+T2_ACKReceiver[111]: Listen to udpSocket.
+T2_ACKReceiver[111]: Got an ACK packet.
+rcv   16.936 - A - - 1 0 109201
+Timeout: updated timeout: 16452milliseconds.
+T2_ACKReceiver[111]: The packet p with sequence number107801should have been removed.
+Decremented inTransitPacket to 18
+T2_ACKReceiver[112]: Listen to udpSocket.
+T2_ACKReceiver[112]: Got an ACK packet.
+rcv   16.936 - A - - 1 0 110601
+Timeout: updated timeout: 16037milliseconds.
+T2_ACKReceiver[112]: The packet p with sequence number109201should have been removed.
+Decremented inTransitPacket to 17
+T2_ACKReceiver[113]: Listen to udpSocket.
+T2_ACKReceiver[113]: Got an ACK packet.
+rcv   16.936 - A - - 1 0 112001
+T2_ACKReceiver[113]: The packet p with sequence number110601should have been removed.
+Decremented inTransitPacket to 16
+T2_ACKReceiver[114]: Listen to udpSocket.
+T2_ACKReceiver[114]: Got an ACK packet.
+rcv   16.936 - A - - 1 0 113401
+T2_ACKReceiver[114]: The packet p with sequence number112001should have been removed.
+Decremented inTransitPacket to 15
+T2_ACKReceiver[115]: Listen to udpSocket.
+T2_ACKReceiver[115]: Got an ACK packet.
+rcv   16.978 - A - - 1 0 114801
+snd   16.980 - A - D 128801 1400 1
+T2_ACKReceiver[115]: The packet p with sequence number113401should have been removed.
+Decremented inTransitPacket to 14
+T2_ACKReceiver[116]: Listen to udpSocket.
+T2_ACKReceiver[116]: Got an ACK packet.
+rcv   16.981 - A - - 1 0 116201
+T2_ACKReceiver[116]: The packet p with sequence number114801should have been removed.
+Decremented inTransitPacket to 13
+T2_ACKReceiver[117]: Listen to udpSocket.
+T2_ACKReceiver[117]: Got an ACK packet.
+rcv   16.981 - A - - 1 0 117601
+T2_ACKReceiver[117]: The packet p with sequence number116201should have been removed.
+Decremented inTransitPacket to 12
+T2_ACKReceiver[118]: Listen to udpSocket.
+T2_ACKReceiver[118]: Got an ACK packet.
+rcv   16.988 - A - - 1 0 119001
+T2_ACKReceiver[118]: The packet p with sequence number117601should have been removed.
+Decremented inTransitPacket to 11
+T2_ACKReceiver[119]: Listen to udpSocket.
+T2_ACKReceiver[119]: Got an ACK packet.
+rcv   17.076 - A - - 1 0 120401
+T2_ACKReceiver[119]: The packet p with sequence number119001should have been removed.
+Decremented inTransitPacket to 10
+T2_ACKReceiver[120]: Listen to udpSocket.
+T2_ACKReceiver[120]: Got an ACK packet.
+rcv   17.076 - A - - 1 0 121801
+T2_ACKReceiver[120]: The packet p with sequence number120401should have been removed.
+Decremented inTransitPacket to 9
+T2_ACKReceiver[121]: Listen to udpSocket.
+T2_ACKReceiver[121]: Got an ACK packet.
+rcv   17.078 - A - - 1 0 123201
+T2_ACKReceiver[121]: The packet p with sequence number121801should have been removed.
+Decremented inTransitPacket to 8
+T2_ACKReceiver[122]: Listen to udpSocket.
+snd   22.360 - A - D 133001 277 1
+T2_ACKReceiver[122]: Listen to udpSocket.
+T2_ACKReceiver[122]: Got an ACK packet.
+rcv   22.411 - A - - 1 0 124601
+T2_ACKReceiver[122]: The packet p with sequence number123201should have been removed.
+Decremented inTransitPacket to 7
+T2_ACKReceiver[123]: Listen to udpSocket.
+snd   23.388 - A - D 130201 1400 1
+T2_ACKReceiver[123]: Got an ACK packet.
+rcv   23.457 - A - - 1 0 126001
+snd   23.457 - A - D 131601 1400 1
+T2_ACKReceiver[123]: The packet p with sequence number124601should have been removed.
+Decremented inTransitPacket to 6
+T2_ACKReceiver[124]: Listen to udpSocket.
+T2_ACKReceiver[124]: Got an ACK packet.
+rcv   23.547 - A - - 1 0 127401
+T2_ACKReceiver[124]: The packet p with sequence number126001should have been removed.
+Decremented inTransitPacket to 5
+T2_ACKReceiver[125]: Listen to udpSocket.
+snd   24.133 - A - D 127401 1400 1
+T2_ACKReceiver[125]: Got an ACK packet.
+rcv   24.178 - A - - 1 0 128801
+snd   24.178 - A - D 128801 1400 1
+T2_ACKReceiver[125]: The packet p with sequence number127401should have been removed.
+Decremented inTransitPacket to 4
+T2_ACKReceiver[126]: Listen to udpSocket.
+T2_ACKReceiver[126]: Got an ACK packet.
+rcv   24.287 - A - - 1 0 130201
+T2_ACKReceiver[126]: The packet p with sequence number128801should have been removed.
+Decremented inTransitPacket to 3
+T2_ACKReceiver[127]: Listen to udpSocket.
+snd   28.616 - A - D 133001 277 1
+T2_ACKReceiver[127]: Got an ACK packet.
+rcv   28.675 - A - - 1 0 131601
+T2_ACKReceiver[127]: The packet p with sequence number130201should have been removed.
+Decremented inTransitPacket to 2
+T2_ACKReceiver[128]: Listen to udpSocket.
+snd   30.262 - A - D 131601 1400 1
+T2_ACKReceiver[128]: Got an ACK packet.
+rcv   30.347 - A - - 1 0 133001
+T2_ACKReceiver[128]: The packet p with sequence number131601should have been removed.
+Decremented inTransitPacket to 1
+T2_ACKReceiver[129]: Listen to udpSocket.
+snd   34.872 - A - D 133001 277 1
+T2_ACKReceiver[129]: Got an ACK packet.
+rcv   34.931 - A - - 1 0 133278
+T2_ACKReceiver[129]: The packet p with sequence number133001should have been removed.
+Decremented inTransitPacket to 0
+snd   34.934 - - F - 133278 0 1
+T3 is exiting...
+Number of packets sent/received: 96 packets
+Number of retransmissions: 48 packets
+Number of duplicate acknowledgements: 128 counts
+
