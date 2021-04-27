@@ -110,7 +110,7 @@ public class TCPRcv{
             udpSocket.receive(a);
             boolean ackReceived = false; 
             int dropCount = 16; 
-            Packet aPkt;
+            Packet aPkt = null;
             while(! ackReceived && dropCount>0){
                 bb = new byte[a.getLength()];
                 System.arraycopy(b, 0, bb, 0, bb.length);
