@@ -126,11 +126,11 @@ public class TCPSend {
                 packetManager.getStatistics().incrementIncChecksum(1);
                 return false;}
             if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
-            if(ackPkt.getACK() != packetManager.getLocalSequenceNumber()+1){ return false; }
+            if( ackPkt.getACK() != packetManager.getLocalSequenceNumber() ){ return false; }
             packetManager.output(ackPkt, "rcv");
         
             //wait for FIN
-            r = new byte[maxDatagramPacketLength];
+            // r = new byte[maxDatagramPacketLength];
             udpSocket.receive(dgR); 
             //check valid ACK: ACK value, checksum, flag 
             bb = new byte[dgR.getLength()];

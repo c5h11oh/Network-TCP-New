@@ -100,7 +100,7 @@ public class PacketManager {
         }
     }
 
-    public void setAllPacketsEnqueued(){
+    public synchronized void setAllPacketsEnqueued(){
         this.allPacketsEnqueued = true;
     }
 
@@ -232,13 +232,11 @@ public class PacketManager {
             try {
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::trySendNewData()" );
                 wait();
-            } catch (InterruptedException e) {
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::trySendNewData()" );
-                // System.out.println("Thread: " + Thread.currentThread().getName() + ": before recalculate, vacancy = " + vacancy + ". (should be 0)");
-                vacancy = windowSize - inTransitPacket;
-                // System.out.println("Thread: " + Thread.currentThread().getName() + ": after recalculate, vacancy = " + vacancy + ".");
-            }
-            
+            } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::trySendNewData()" );
+            // System.out.println("Thread: " + Thread.currentThread().getName() + ": before recalculate, vacancy = " + vacancy + ". (should be 0)");
+            vacancy = windowSize - inTransitPacket;
+            // System.out.println("Thread: " + Thread.currentThread().getName() + ": after recalculate, vacancy = " + vacancy + ".");
         }
 
         for(PacketWithInfo p : this.queue) {
@@ -249,7 +247,7 @@ public class PacketManager {
                     System.err.println("PacketManager: trySendNewData: abnormal: " + e);
                     System.exit(1);
                 }
-                output(p.packet, "snd");
+                // output(p.packet, "snd"); // senderSendUDP has it
                 lastSent = p.packet; 
                 --vacancy;
             }
@@ -269,7 +267,7 @@ public class PacketManager {
             System.err.println("PacketManager: dupACKFastRetransmit: abnormal: " + e);
             System.exit(1);
         }
-        output( pwi.packet, "snd");
+        // output( pwi.packet, "snd"); // senderSendUDP has it
     }
 
     /**
@@ -288,6 +286,7 @@ public class PacketManager {
     Sender T3: This function scan through the queue and checking unexpired packets all time 
     retransmit and set new timeout during the process
     */
+    // TODO: see if adding "synchronized" affects the result
     public void checkExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
         //while ! all packet enqueued
             //if the queue not empty: cheking timout until find unexpired packet 
@@ -303,9 +302,8 @@ public class PacketManager {
                     try{
                         // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
                         wait();
-                    } catch (InterruptedException e) {
-                        // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
-                    }
+                    } catch (InterruptedException e) {}
+                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
                 }
             }
 
@@ -350,7 +348,7 @@ public class PacketManager {
                 System.err.println("PacketManager: helperCheckExpire: abnormal: " + e);
                 System.exit(1);
             }
-            output(head2.packet, "snd");
+            // output(head2.packet, "snd"); // senderSendUDP has it
             this.getStatistics().incrementRetransCount();
 
         }else{
@@ -361,9 +359,9 @@ public class PacketManager {
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
                 wait(timeRemain); 
-            } catch (InterruptedException e) {
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
-            }
+            } catch (InterruptedException e) {}
+            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
+
         }
     }
 

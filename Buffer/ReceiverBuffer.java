@@ -127,9 +127,8 @@ public class ReceiverBuffer extends Buffer {
             this.notifyAll();
             try{
                 this.wait();
-            } catch (InterruptedException e) {
-                b = this.getData();
-            }
+            } catch (InterruptedException e) {}
+            b = this.getData();
         }
 
         return b;

@@ -379,9 +379,8 @@ public class TCPRcv{
                         try {
                             rcvBuffer.notifyAll(); 
                             rcvBuffer.wait();
-                        } catch (InterruptedException e) {
-                            continue; // start from top
-                        }
+                        } catch (InterruptedException e) {}
+                        continue; // start from top
                     }
                 
                     // there is space in rcvBuffer to put data
@@ -422,9 +421,8 @@ public class TCPRcv{
                         try {
                             rcvBuffer.notifyAll();
                             rcvBuffer.wait();
-                        } catch (InterruptedException e) {
-                            continue; // start from top
-                        }
+                        } catch (InterruptedException e) {}
+                        continue; // start from top
                     }
                     else {
                         try {
