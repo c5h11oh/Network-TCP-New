@@ -116,45 +116,39 @@ public class TCPSend {
             DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
             byte[] r1 = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
             DatagramPacket dgR1 = new DatagramPacket(r1, r1.length); // datagram of r
-            byte[] r2 = new byte[maxDatagramPacketLength];
-            DatagramPacket dgR2 = new DatagramPacket(r2, r1.length); // datagram of r
+            Packet pkt1 = null;
 
             udpSocket.send(udpFin);
             packetManager.output(f, "snd");
-            udpSocket.receive(dgR1);
-            byte[] bb1 = new byte[dgR1.getLength()];
-            System.arraycopy(r1, 0, bb1, 0, bb1.length);
-            Packet pkt1 = Packet.deserialize(bb1);
-            packetManager.output(pkt1, "rcv");
-
-            udpSocket.receive(dgR2);
-            byte[] bb2 = new byte[dgR2.getLength()];
-            System.arraycopy(r2, 0, bb2, 0, bb2.length);
-            Packet pkt2 = Packet.deserialize(bb2);
-            packetManager.output(pkt2, "rcv");
             
-            //check valid ACK, FIN: checksum, flag. possibly ACK value 
-            if( !pkt1.verifyChecksum() && !pkt2.verifyChecksum()){ 
-                packetManager.getStatistics().incrementIncChecksum(2);
-                System.out.println("fin and ack wrong checksum");
-                return false;
+            boolean gotACK = false;
+            boolean gotFIN = false;
+            while ( !(gotACK && gotFIN) ) {
+                udpSocket.receive(dgR1);
+                byte[] bb1 = new byte[dgR1.getLength()];
+                System.arraycopy(r1, 0, bb1, 0, bb1.length);
+                pkt1 = Packet.deserialize(bb1);
+                packetManager.output(pkt1, "rcv");
+
+                if( !pkt1.verifyChecksum()){ 
+                    packetManager.getStatistics().incrementIncChecksum(2);
+                    System.out.println("fin and ack wrong checksum");
+                    return false;
+                }
+
+                if ( Packet.checkACK(pkt1) ) {
+                    gotACK = true;
+                }
+                if ( Packet.checkFIN(pkt1) ) {
+                    gotFIN = true;
+                }
             }
-            else if( !pkt1.verifyChecksum() || !pkt2.verifyChecksum()){ 
-                packetManager.getStatistics().incrementIncChecksum(1);
-                System.out.println("fin or ack wrong checksum");
-                return false;
-            }
-            boolean madeIt = ( Packet.checkACK(pkt1) || Packet.checkACK(pkt2) ) &&
-                             ( Packet.checkFIN(pkt1) || Packet.checkFIN(pkt2) ) &&
-                             (!Packet.checkSYN(pkt1) &&!Packet.checkSYN(pkt2) );
-            if (madeIt == false){ 
-                System.out.println("not make it");
-                return false;}
             packetManager.increaseRemoteSequenceNumber(1); //FIN counts for 1 
-            // int finACK = pkt2.getByteSeqNum(); 
+
+            if (pkt1 == null) return false;
 
             //reply ACK
-            Packet a2 = packetManager.makeACKPacket(pkt2);
+            Packet a2 = packetManager.makeACKPacket(pkt1);
             //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
             // if( a2.getACK() == finACK+1){
             //     throw new DebugException();
