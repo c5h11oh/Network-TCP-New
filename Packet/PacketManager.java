@@ -324,7 +324,7 @@ public class PacketManager {
             helperCheckExpire(udpSocket, remotePort, remoteIp);
 
             try{
-                Thread.sleep(10);
+                //Thread.sleep(10);
             } catch (InterruptedException e) {}
         }
         
