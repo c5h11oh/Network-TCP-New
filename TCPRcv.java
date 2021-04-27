@@ -181,6 +181,9 @@ public class TCPRcv{
         }
 
         //close 
+        try{
+            wait(50);
+        } catch (InterruptedException e) {}
         udpSocket.close();
         return true;
     }

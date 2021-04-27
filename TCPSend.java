@@ -109,46 +109,51 @@ public class TCPSend {
         //send FIN
         Packet f = packetManager.makeFINPacket();
         try{
+            // Set receive timeout
+            udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
+            
+            // send FIN and receive ACK + FIN
             DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
+            byte[] r1 = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
+            DatagramPacket dgR1 = new DatagramPacket(r1, r1.length); // datagram of r
+            byte[] r2 = new byte[maxDatagramPacketLength];
+            DatagramPacket dgR2 = new DatagramPacket(r1, r1.length); // datagram of r
+
             udpSocket.send(udpFin);
             packetManager.output(f, "snd");
-            // wait to receive ACK
-            udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
-            byte[] r = new byte[maxDatagramPacketLength]; // pkt buffer for reverse direction
-            DatagramPacket dgR = new DatagramPacket(r, r.length); // datagram of r
-            udpSocket.receive(dgR);
+            udpSocket.receive(dgR1);
+            byte[] bb1 = new byte[dgR1.getLength()];
+            System.arraycopy(r1, 0, bb1, 0, bb1.length);
+            Packet pkt1 = Packet.deserialize(bb1);
+            packetManager.output(pkt1, "rcv");
+            udpSocket.receive(dgR2);
+            byte[] bb2 = new byte[dgR2.getLength()];
+            System.arraycopy(r2, 0, bb2, 0, bb2.length);
+            Packet pkt2 = Packet.deserialize(bb2);
+            packetManager.output(pkt2, "rcv");
             
-            //check valid ACK: ACK value, checksum, flag 
-            byte[] bb = new byte[dgR.getLength()];
-            System.arraycopy(r, 0, bb, 0, bb.length);
-            Packet ackPkt = Packet.deserialize(bb);
-            if( !ackPkt.verifyChecksum()){ 
+            //check valid ACK, FIN: checksum, flag. possibly ACK value 
+            if( !pkt1.verifyChecksum() && !pkt2.verifyChecksum()){ 
+                packetManager.getStatistics().incrementIncChecksum(2);
+                return false;
+            }
+            else if( !pkt1.verifyChecksum() || !pkt2.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);
-                return false;}
-            if( !Packet.checkACK(ackPkt) || Packet.checkFIN( ackPkt) || Packet.checkSYN(ackPkt)){return false; }
-            if( ackPkt.getACK() != packetManager.getLocalSequenceNumber() ){ return false; }
-            packetManager.output(ackPkt, "rcv");
-        
-            //wait for FIN
-            // r = new byte[maxDatagramPacketLength];
-            udpSocket.receive(dgR); 
-            //check valid ACK: ACK value, checksum, flag 
-            bb = new byte[dgR.getLength()];
-            System.arraycopy(r, 0, bb, 0, bb.length);
-            Packet f2 = Packet.deserialize(bb);
-            if( !f2.verifyChecksum()){ 
-                packetManager.getStatistics().incrementIncChecksum(1);
-                return false;}
-            if( Packet.checkACK(f2) || !Packet.checkFIN( f2) || Packet.checkSYN(f2)){return false; }
-            packetManager.output(f2, "rcv");
-            int finACK = f2.getByteSeqNum(); 
+                return false;
+            }
+            boolean madeIt = ( Packet.checkACK(pkt1) || Packet.checkACK(pkt2) ) &&
+                             ( Packet.checkFIN(pkt1) || Packet.checkFIN(pkt2) ) &&
+                             (!Packet.checkSYN(pkt1) &&!Packet.checkSYN(pkt2) );
+            if (madeIt == false) return false;
+            
+            // int finACK = pkt2.getByteSeqNum(); 
 
             //reply ACK
-            Packet a2 = packetManager.makeACKPacket(f2);
+            Packet a2 = packetManager.makeACKPacket(pkt2);
             //assert a2.getACK() == finACK+1 : "sender reply receiver's FIN with incorrect ACK"; 
-            if( a2.getACK() == finACK+1){
-                throw new DebugException();
-            }
+            // if( a2.getACK() == finACK+1){
+            //     throw new DebugException();
+            // }
 
             DatagramPacket udpA2 = toUDP(a2,remoteIp, remotePort );
             udpSocket.send( udpA2);
@@ -156,8 +161,8 @@ public class TCPSend {
             
         }
         catch(IOException ioe){
-            System.err.println("sender close fails: " + ioe);
-            return false;
+            System.err.println("sender close IO Exception: " + ioe);
+            return true;
         }
         //close
         udpSocket.close(); 
@@ -408,6 +413,7 @@ public class TCPSend {
             catch (DebugException e) {
                 System.err.println(e.getStackTrace());
                 throw new RuntimeException("Debug Exception");
+                // TODO: come to here once
             }
             catch (DupACKPacketNotExistException e) {
                 System.err.println(e);
