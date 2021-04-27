@@ -35,7 +35,11 @@ public class ReceiverBuffer extends Buffer {
         return this.noMoreNewByte;
     }
 
-    public void setNoMoreNewByteToTrue() {
+    public synchronized void notifyAllWrapper(){
+        this.notifyAll();
+    }
+
+    public synchronized void setNoMoreNewByteToTrue() {
         this.noMoreNewByte = true;
         notifyAll();
     }
@@ -94,7 +98,7 @@ public class ReceiverBuffer extends Buffer {
             dataLength = lastContinuousByte - lastByteRead;
         }
         else { // wrapped
-            dataLength = lastContinuousByte + bufferSize - lastByteRead;
+            dataLength = bufferSize - lastByteRead + lastContinuousByte;
         }
         
         byte[] returnData = new byte[dataLength];
@@ -103,8 +107,9 @@ public class ReceiverBuffer extends Buffer {
             lastByteRead += dataLength;
         }
         else {
-            int endByteCount = bufferSize - lastContinuousByte - 1;
-            System.arraycopy(this.buf, lastByteRead + 1, returnData, 0, endByteCount);
+            int nextByteToBeRead = (lastByteRead + 1) % bufferSize;
+            int endByteCount = bufferSize - lastByteRead - 1;
+            System.arraycopy(this.buf, nextByteToBeRead, returnData, 0, endByteCount);
             System.arraycopy(this.buf, 0, returnData, endByteCount, dataLength - endByteCount);
             lastByteRead = dataLength - endByteCount - 1;
         }

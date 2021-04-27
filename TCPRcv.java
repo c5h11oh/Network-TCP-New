@@ -451,17 +451,18 @@ public class TCPRcv{
             // Note that it is because we only have one putter (thread 2) and one getter (thread 3) so that we can use a single lock (rcvBuffer) to control.
             while ( rcvBuffer.getNoMoreNewByte() == false ) {
                 byte[] b = rcvBuffer.waitAndGetData();
-
-                // there is data. write all data into the file
-                try {
-                    fileOstream.write(b);
-                } catch (IOException e) {
-                    System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
-                    System.exit(1);
+                if (b != null) {
+                    // there is data. write all data into the file
+                    try {
+                        fileOstream.write(b);
+                    } catch (IOException e) {
+                        System.err.println("TCPRcv: BufferToFile: IOException when writing to file: " + e);
+                        System.exit(1);
+                    }
                 }
 
                 // notify thread 2 that rcvBuffer is now empty
-                rcvBuffer.notifyAll();
+                rcvBuffer.notifyAllWrapper();
             }
 
             // The buffer may contain last piece of data (or not)
