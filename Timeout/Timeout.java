@@ -47,7 +47,7 @@ public class Timeout {
             System.out.println("Timeout: first update");
         }
         else{
-            long sampleRTT = System.nanoTime() - packet.getTimeStamp();
+            long sampleRTT = Math.abs(System.nanoTime() - packet.getTimeStamp());
             long sampleDEV = Math.abs(sampleRTT - estRTT);
             estRTT = (long)(a * estRTT + (1-a) * sampleRTT);
             estDEV = (long)(b * estDEV + (1-b) * sampleDEV);
