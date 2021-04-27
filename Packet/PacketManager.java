@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.lang.Math;
 
 import Statistics.*;
 import Timeout.*; 
@@ -111,7 +112,7 @@ public class PacketManager {
         PacketWithInfo head = this.packetsWithInfo.poll(); 
             
         //expire 
-        if( (head.timeOut + head.packet.timeStamp) < System.nanoTime() ){
+        if( (head.timeOut + head.packet.timeStamp) > System.nanoTime() ){
             //retransmit the packet 
            
 
@@ -125,7 +126,7 @@ public class PacketManager {
             
         }else{
             //the current packet not timeout 
-            long waitTime = head.timeOut / (1^6); // ns to ms 
+            long waitTime = head.timeOut /  (long) (1e6); // ns to ms 
             //put the packet back and wait for timeout time 
             this.packetsWithInfo.add(head);
             notifyAll();
