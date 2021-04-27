@@ -306,7 +306,6 @@ public class TCPRcv{
                 else if ( pwi.packet.byteSeqNum > seqNumLookingFor ) {
                     // put back this discontinued PacketWithInfo in the front
                     pwiToBePutBack.add(pwi);
-                    break;
                 }
                 else if ( pwi.packet.byteSeqNum == seqNumLookingFor ) {
                     // the next continuous PacketWithInfo. put it in continuousPackets' tail
