@@ -108,19 +108,34 @@ public class TCPRcv{
             b = new byte[maxDatagramPacketLength];
             DatagramPacket a = new DatagramPacket( b, maxDatagramPacketLength);
             udpSocket.receive(a);
-            bb = new byte[a.getLength()];
-            System.arraycopy(b, 0, bb, 0, bb.length);
-            Packet aPkt = Packet.deserialize(bb);
-            if(!Packet.checkACK(aPkt)){ 
-                System.out.println(" receive ack flag problem");
-                return false;}
-            if(Packet.checkSYN(aPkt) || Packet.checkFIN(aPkt)) { 
-                System.out.println(" receive ack flag problem");
-                return false;}
-            if(! synPkt.verifyChecksum()){ 
-                System.out.println(" receive ack checksum problem");
-                packetManager.getStatistics().incrementIncChecksum(1);
-                return false;}
+            boolean ackReceived = false; 
+            int dropCount = 16; 
+            while(! ackReceived && dropCount>0){
+                bb = new byte[a.getLength()];
+                System.arraycopy(b, 0, bb, 0, bb.length);
+                Packet aPkt = Packet.deserialize(bb);
+                if(! synPkt.verifyChecksum()){ 
+                    System.out.println(" receive ack checksum problem");
+                    packetManager.getStatistics().incrementIncChecksum(1);
+                    return false;}
+                if(!Packet.checkACK(aPkt)){ 
+                    if(Packet.checkSYN(aPkt)){
+                        udpSocket.receive(a);
+                        dropCount--;
+                        continue;
+                    }else{
+                        return false; 
+                    }
+                    
+                    ackReceived = true; }
+            }
+            if(dropCount ==0){
+                System.out.println("cannot receive ACK for 16 times");
+                return false; 
+            }
+            
+            
+            
             if(aPkt.getACK() != packetManager.getLocalSequenceNumber()){
                 System.out.println(" receive ack wrong ACK number problem");
                 return false;}
