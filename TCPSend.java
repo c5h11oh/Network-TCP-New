@@ -340,7 +340,7 @@ public class TCPSend {
                                 System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The ACK packet is a duplicate ACK.");
                                 PacketWithInfo pp = null;
                                 for (PacketWithInfo p : packetManager.getQueue()) {
-                                    if(p.packet.byteSeqNum == ACKnum){
+                                    if(p.packet.byteSeqNum + p.packet.getDataLength() == ACKnum){
                                         pp = p;
                                         p.ACKcount++;
                                         packetManager.getStatistics().incrementDupACKCount();
@@ -349,14 +349,14 @@ public class TCPSend {
                                     }
                                 }
                                 if (pp == null){
-                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": We think it is a duplicate ACK but we cannot find such packet in PM. Throw exception.");
+                                    System.err.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": We think it is a duplicate ACK but we cannot find such packet in PM. Throw exception.");
                                     throw new DupACKPacketNotExistException();
     
                                 }
                                 
                                 // Check triple dup ACK?
                                 if (pp.ACKcount == 4) { // triple dup ACK
-                                    System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. Resend packet.");
+                                    System.err.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The duplicate ACK reaches four. Resend packet.");
                                     dupACKResend(pp);                        
                                 }
                             }
@@ -367,11 +367,11 @@ public class TCPSend {
                                         // If seqNum+length==ACKnum -> update RTT, timeout
                                         int ACKnumMatch = p.packet.byteSeqNum + p.packet.getDataLength();
                                         if (ACKnumMatch < 0) { ACKnumMatch += Integer.MAX_VALUE; ACKnumMatch += 1; } // wrap
-                                        if (ACKnumMatch == ACKnum) {timeOut.update(p.packet);}
+                                        if (ACKnumMatch == ACKnum && p.resendCount == 0) {timeOut.update(p.packet);}
     
                                         // remove received packets from queue
                                         if (packetManager.getQueue().remove(p) != true) {
-                                            throw new RuntimeException("assert problem");
+                                            throw new RuntimeException("TCPSend::ACKReceiver: fail to remove received packet from packetManager queue. (1. ACK num not wrapped)");
                                         }
                                         System.out.println(Thread.currentThread().getName() + "[" + debugCounter + "]" +": The packet p with sequence number" + p.packet.byteSeqNum + "should have been removed.") ;
                                         if (prevPktSeqNum != p.packet.byteSeqNum)
@@ -389,13 +389,19 @@ public class TCPSend {
                                 }
                             }
                             else { // May be a new ACK or a dup ACK, ACK number is wrapped
+                                System.err.println(Thread.currentThread() + ": The ACK number wrapped! Exitting...");
+                                System.exit(1);
+                                // TODO: remove such exit
                                 for(PacketWithInfo p : packetManager.getQueue()){
-                                    if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum >= lastACKnum){
+                                    if (p.packet.byteSeqNum < ACKnum || p.packet.byteSeqNum > lastACKnum){
                                         //assert packetManager.getQueue().remove(p) == true;
                                         if(!packetManager.getQueue().remove(p)){
-                                            throw new RuntimeException("assert problem");
+                                            throw new RuntimeException("TCPSend::ACKReceiver: fail to remove received packet from packetManager queue. (2. ACK num wrapped)");
                                         }
                                         packetManager.decrementInTransitPacket();
+                                    }
+                                    if (p.packet.byteSeqNum == lastACKnum && !packetManager.getQueue().remove(p)) {
+                                        throw new RuntimeException("TCPSend::ACKReceiver: fail to remove received packet from packetManager queue. (3. Special case... should never happen)");
                                     }
                                     else if (p.packet.byteSeqNum == ACKnum){
                                         packetManager.getStatistics().incrementDupACKCount();
