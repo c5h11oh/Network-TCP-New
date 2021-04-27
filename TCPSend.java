@@ -110,7 +110,7 @@ public class TCPSend {
         Packet f = packetManager.makeFINPacket();
         try{
             // Set receive timeout
-            udpSocket.setSoTimeout( (int) timeOut.getTimeout() / 1000000);
+            udpSocket.setSoTimeout( (int) (timeOut.getTimeout() / 1000000));
             
             // send FIN and receive ACK + FIN
             DatagramPacket udpFin = toUDP(f, remoteIp, remotePort);
