@@ -300,36 +300,34 @@ public class PacketManager {
         int debugCounter = 0;
         while( !allPacketsEnqueued){
             // DEBUG
-            System.out.println(Thread.currentThread() + "[" + debugCounter++ + "]: running checkExpire while loop");
+            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): running checkExpire while loop");
             
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
                 try{
-                    notifyAll();
-                    
-                        // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
+                    synchronized(this) {
+                        notifyAll();
+                        System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): queue is empty, going to sleep");
                         wait();
-                    } catch (InterruptedException e) {}
-                    catch(IllegalMonitorStateException e2){}
-                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
-                
+                    }    
+                } catch (InterruptedException e) {}
+                System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): being awake");
             }
 
             if (this.queue.isEmpty()) {
+                System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): queue is still empty. comtinue.");
                 continue;
             }
 
             //check packets and retransmit until find unexpired packets 
             //wait one timeout unit if unexpired found 
+            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): Going into helper (1)");
             helperCheckExpire(udpSocket, remotePort, remoteIp);
-
-            try{
-                //Thread.sleep(10);
-            } catch (InterruptedException e) {}
         }
         
         // no more new packet will be put in queue. Deal with remaining packets in queue.
         while( !this.queue.isEmpty()){
+            System.err.println(Thread.currentThread() + "[" + debugCounter++ + "]: checkExpire(): Going into helper (2)");
             helperCheckExpire(udpSocket, remotePort, remoteIp);
         }
         return ; 
@@ -340,18 +338,20 @@ public class PacketManager {
      * Sender T3: Checking timeout. Only called by checkExpire()
      */
     private synchronized void helperCheckExpire( DatagramSocket udpSocket, int remotePort, InetAddress remoteIp) throws IOException, NoSuchElementException, DebugException {
-
+        System.err.println(Thread.currentThread() + ": helperCheckExpire(): start");
         PacketWithInfo head = this.queue.element(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
         
         long timeRemain = ((head.timeOut + head.packet.timeStamp) - System.nanoTime()) / 1000000; // in ms
         // check if the frontmost packet is timeout. If so, poll such timeout packet, make a "resend packet" from it, send such "resend packet", and put "resend packet" into the packetManager. If not, wait until the 
         if( timeRemain <= 0 ){ // timeout. retransmit the packet.
+            System.err.println(Thread.currentThread() + ": helperCheckExpire(): timeRemain < 0");
             // remove timeout packet
             this.queue.remove(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
             
             PacketWithInfo head2 = head.getResendPacketWithInfo(this.remoteSequenceNumber);
             // add the packet back to the manager 
             queue.add(head2); 
+            System.err.println(Thread.currentThread() + ": helperCheckExpire(): timeout packet is put back to the queue.");
             
             // send UDP
             try {
@@ -365,22 +365,23 @@ public class PacketManager {
             // output(head2.packet, "snd"); // senderSendUDP has it
             this.getStatistics().incrementRetransCount();
 
-        }else{
-            // the current packet not timeout 
-            // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
-            // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
-            
-                notifyAll();
-            
-            try{
-                // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
-                wait(); 
-            } catch (InterruptedException e) {}
-            catch(IllegalMonitorStateException e2){}
-        
-            // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
-
         }
+        // else{
+        //     // the current packet not timeout 
+        //     // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
+        //     // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
+            
+        //         notifyAll();
+            
+        //     try{
+        //         // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
+        //         wait(); 
+        //     } catch (InterruptedException e) {}
+        //     // catch(IllegalMonitorStateException e2){}
+        
+        //     // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
+
+        // }
     }
 
     /*********************************************************************/

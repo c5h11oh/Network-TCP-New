@@ -275,6 +275,9 @@ public class TCPSend {
             PacketWithInfo infoPkt = new PacketWithInfo(tcpPkt);
             infoPkt.timeOut = timeOut.getTimeout();
             packetManager.getQueue().add(infoPkt);
+            synchronized(packetManager) {
+                packetManager.notifyAll();
+            }
             
             // increment local sequence number
             if (data != null) {
