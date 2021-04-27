@@ -346,14 +346,6 @@ public class PacketManager {
             // remove timeout packet
             this.queue.remove(); // May throw NoSuchElementException. Logically it shouldn't since we've checked the queue is not empty.
             
-<<<<<<< HEAD
-        //expire 
-        if( (head.timeOut + head.packet.timeStamp) > System.nanoTime() ){
-            //retransmit the packet 
-           
-
-=======
->>>>>>> 3bdb52bbf3903d84d3c2c46e2ee97df0b89cb0d9
             PacketWithInfo head2 = head.getResendPacketWithInfo(this.remoteSequenceNumber);
             // add the packet back to the manager 
             queue.add(head2); 
@@ -369,20 +361,13 @@ public class PacketManager {
             this.getStatistics().incrementRetransCount();
 
         }else{
-<<<<<<< HEAD
-            //the current packet not timeout 
-            long waitTime = head.timeOut /  (long) (1e6); // ns to ms 
-            //put the packet back and wait for timeout time 
-            this.packetsWithInfo.add(head);
-=======
             // the current packet not timeout 
             // System.out.printf("Curr time: %f, expire time: %f\n", (double)System.nanoTime()/1000000,  (double)(head.timeOut + head.packet.timeStamp)/1000000);
             // System.out.println("time out value: " + (head.timeOut / 1000000000) + " s" );
->>>>>>> 3bdb52bbf3903d84d3c2c46e2ee97df0b89cb0d9
             notifyAll();
             try{
                 // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::helperCheckExpire()" );
-                wait(timeRemain); 
+                wait(); 
             } catch (InterruptedException e) {}
             // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::helperCheckExpire()" );
 

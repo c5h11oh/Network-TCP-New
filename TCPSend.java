@@ -126,6 +126,7 @@ public class TCPSend {
             System.arraycopy(r1, 0, bb1, 0, bb1.length);
             Packet pkt1 = Packet.deserialize(bb1);
             packetManager.output(pkt1, "rcv");
+
             udpSocket.receive(dgR2);
             byte[] bb2 = new byte[dgR2.getLength()];
             System.arraycopy(r2, 0, bb2, 0, bb2.length);
@@ -135,16 +136,20 @@ public class TCPSend {
             //check valid ACK, FIN: checksum, flag. possibly ACK value 
             if( !pkt1.verifyChecksum() && !pkt2.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(2);
+                System.out.println("fin and ack wrong checksum");
                 return false;
             }
             else if( !pkt1.verifyChecksum() || !pkt2.verifyChecksum()){ 
                 packetManager.getStatistics().incrementIncChecksum(1);
+                System.out.println("fin or ack wrong checksum");
                 return false;
             }
             boolean madeIt = ( Packet.checkACK(pkt1) || Packet.checkACK(pkt2) ) &&
                              ( Packet.checkFIN(pkt1) || Packet.checkFIN(pkt2) ) &&
                              (!Packet.checkSYN(pkt1) &&!Packet.checkSYN(pkt2) );
-            if (madeIt == false) return false;
+            if (madeIt == false){ 
+                System.out.println("not make it");
+                return false;}
             
             // int finACK = pkt2.getByteSeqNum(); 
 
