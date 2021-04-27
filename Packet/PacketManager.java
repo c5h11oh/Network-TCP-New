@@ -7,11 +7,7 @@ import java.net.InetAddress;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import java.util.Comparator;
-<<<<<<< HEAD
-import java.lang.Math;
-=======
 import java.util.NoSuchElementException;
->>>>>>> 3bdb52bbf3903d84d3c2c46e2ee97df0b89cb0d9
 
 import Statistics.*;
 import Exceptions.*;
