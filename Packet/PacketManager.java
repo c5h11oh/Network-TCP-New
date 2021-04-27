@@ -298,13 +298,14 @@ public class PacketManager {
         while( !allPacketsEnqueued){
             if (this.queue.isEmpty()){
                 // notify T2 to put packet to queue
-                notifyAll();
-                try{
-                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
-                    wait();
-                } catch (InterruptedException e) {
-                    // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
-
+                synchronized(this) {
+                    notifyAll();
+                    try{
+                        // System.out.println("Thread: " + Thread.currentThread().getName() + " is now going to sleep at " + this.getClass().getName() + "::checkExpire()" );
+                        wait();
+                    } catch (InterruptedException e) {
+                        // System.out.println("Thread: " + Thread.currentThread().getName() + " is now woken up from " + this.getClass().getName() + "::checkExpire()" );
+                    }
                 }
             }
 
